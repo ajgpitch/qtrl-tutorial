@@ -1,0 +1,5 @@
+# The code in these file is intended for use in not-for-profit research,
+# teaching, and learning. Any other applications may require additional licensing
+
+# Note the qutip library files are covered by their own license 
+# which is contained within all the source files
