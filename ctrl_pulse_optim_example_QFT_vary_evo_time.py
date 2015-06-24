@@ -34,6 +34,10 @@ The user can experiment with the timeslicing, by means of changing the
 number of timeslots and/or total time for the evolution.
 Different initial (starting) pulse types can be tried.
 The initial and final pulses are displayed in a plot
+
+Note the physics of this example was taken from a demo in:
+DYNAMO - Dynamic Framework for Quantum Optimal Control
+See Machnes et.al., arXiv.1011.4874
 """
 import numpy as np
 import numpy.matlib as mat
@@ -135,7 +139,7 @@ for i in range(n_evo_times):
     # Generate the tau (duration) and time (cumulative) arrays
     # so that it can be used to create the pulse generator
     # with matching timeslots
-    dyn.init_time_slots()
+    dyn.init_timeslots()
     if i > 0:
         # Create a new pulse generator for the new dynamics
         p_gen = pulsegen.create_pulse_gen(p_type, dyn)
