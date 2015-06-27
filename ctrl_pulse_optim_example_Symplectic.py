@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Oct 28 15:14:58 2014
+Updated 2015-06-27
 
 @author: Alexander Pitchford
 @email1: agp1@aber.ac.uk
