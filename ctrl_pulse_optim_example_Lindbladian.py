@@ -39,7 +39,7 @@ logger = logging.get_logger()
 import qutip.control.pulseoptim as cpo
 
 example_name = 'Lindblad'
-log_level = logging.DEBUG
+log_level = logging.INFO
 
 # ****************************************************************
 # Define the physics of the problem
@@ -59,7 +59,7 @@ Sm_d = Qobj(np.array([[0, 0],
 
 #Amplitude damping#
 #Damping rate:
-gamma = 1.0
+gamma = 0.1
 L0_Ad = gamma*(2*tensor(Sm, Sd.trans()) - 
             (tensor(Sd_m, Si) + tensor(Si, Sd_m.trans())))
 #sigma X control

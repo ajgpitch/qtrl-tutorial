@@ -23,6 +23,7 @@ Different initial (starting) pulse types can be tried.
 The initial and final pulses are displayed in a plot
 """
 
+import os
 import numpy as np
 import numpy.matlib as mat
 #import scipy.linalg as la
@@ -34,92 +35,170 @@ from qutip import Qobj, identity
 import qutip.logging as logging
 logger = logging.get_logger()
 #QuTiP control modules
-import qutip.control.pulseoptim as cpo
 import qutip.control.symplectic as sympl
+import qutip.control.optimconfig as optimconfig
+import qutip.control.dynamics as dynamics
+import qutip.control.termcond as termcond
+import qutip.control.optimizer as optimizer
+import qutip.control.stats as stats
+import qutip.control.errors as errors
+import qutip.control.pulsegen as pulsegen
+import qutip.control.loadparams as loadparams
 
-example_name = 'Symplectic'
+example_name = 'Coupled_osc'
 log_level = logging.DEBUG
 
+# Create the OptimConfig object
+cfg = optimconfig.OptimConfig()
+cfg.param_fname = "coup_osc_param.ini"
+cfg.param_fpath = os.path.join(os.getcwd(), cfg.param_fname)
+cfg.log_level = log_level
+# Initial pulse type
+# pulse type alternatives: 
+# RNDWAVES|RNDFOURIER|RNDWALK1|RNDWALK2|RND|ZERO|LIN|SINE|SQUARE|SAW|TRIANGLE|
+cfg.pulse_type = 'RNDWAVES'
+cfg.amp_lbound = -5.0
+cfg.amp_ubound = 5.0
+    
+# load the config parameters
+# note these will overide those above if present in the file
+print("Loading config parameters from {}".format(cfg.param_fpath))
+loadparams.load_parameters(cfg.param_fpath, config=cfg)
+# Update the log level, as this may have been changed in the config
+logger.setLevel(cfg.log_level)
+
+# Create the dynamics object
+dyn = dynamics.DynamicsSymplectic(cfg)
+dyn.num_tslots = 200
+dyn.evo_time = 10.0
+
+# Physical parameters
+dyn.coupling1 = 0.3
+dyn.coupling2 = 0.2
+dyn.sqz = 0.5
+dyn.rot = 1.0
+dyn.init_timeslots()      
+n_ts = dyn.num_tslots
+
+# load the dynamics parameters
+# note these will overide those above if present in the file
+print("Loading dynamics parameters from {}".format(cfg.param_fpath))
+loadparams.load_parameters(cfg.param_fpath, dynamics=dyn)
+
+# Create a pulse generator of the type specified
+p_gen = pulsegen.create_pulse_gen(pulse_type=cfg.pulse_type, dyn=dyn)
+p_gen.lbound = cfg.amp_lbound
+p_gen.ubound = cfg.amp_ubound
+
+# load the pulse generator parameters
+# note these will overide those above if present in the file
+print("Loading pulsegen parameters from {}".format(cfg.param_fpath))
+loadparams.load_parameters(cfg.param_fpath, pulsegen=p_gen)
+
+# Create the TerminationConditions instance
+tc = termcond.TerminationConditions()
+tc.fid_err_targ = 1e-3
+tc.min_gradient_norm = 1e-10
+tc.max_iter_total = 200
+tc.max_wall_time_total = 30
+tc.break_on_targ = True
+
+# load the termination condition parameters
+# note these will overide those above if present in the file
+print("Loading termination condition parameters from {}".format(
+        cfg.param_fpath))
+loadparams.load_parameters(cfg.param_fpath, term_conds=tc)
+        
+
+# Create the optimiser object
+if cfg.optim_method == 'BFGS':
+    optim = optimizer.OptimizerBFGS(cfg, dyn)
+elif cfg.optim_method == 'LBFGSB':
+    optim = optimizer.OptimizerLBFGSB(cfg, dyn)
+elif cfg.optim_method is None:
+    raise errors.UsageError("Optimisation algorithm must be specified "
+                            "via 'optim_method' parameter")
+else:
+    optim = optimizer.Optimizer(cfg, dyn)
+    optim.method = cfg.optim_method
+
+sts = stats.Stats()
+dyn.stats = sts
+optim.stats = sts
+optim.config = cfg
+optim.dynamics = dyn
+optim.termination_conditions = tc
+optim.pulse_generator = p_gen
+    
+# load the optimiser parameters
+# note these will overide those above if present in the file
+print "Loading optimiser parameters from {}".format(cfg.param_fpath)
+loadparams.load_parameters(cfg.param_fpath, optim=optim)
+    
 # ****************************************************************
 # Define the physics of the problem
 
 #Drift
-w1 = 1
-w2 = 1
-g1 = 0.2
-A0 = Qobj(np.array([[w1, 0, g1, 0], 
-                   [0, w1, 0, g1], 
-                   [g1, 0, w2, 0], 
-                   [0, g1, 0, w2]]))
+g1 = 2*(dyn.coupling1 + dyn.coupling2)
+g2 = 2*(dyn.coupling1 - dyn.coupling2)
+A0 = np.array([[1, 0, g1, 0], 
+                   [0, 1, 0, g2], 
+                   [g1, 0, 1, 0], 
+                   [0, g2, 0, 1]])
+dyn.drift_dyn_gen = A0
 
-#Control
-Ac = Qobj(np.array([[1, 0, 0, 0,], \
-                    [0, 1, 0, 0], \
-                    [0, 0, 0, 0], \
-                    [0, 0, 0, 0]]))
-ctrls = [Ac]        
-n_ctrls = len(ctrls)
+#Rotate control
+A_rot = dyn.rot*np.array([
+                    [1, 0, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0]
+                    ])
 
-initial = identity(4)
+
+#Squeeze Control
+A_sqz = dyn.sqz*np.array([
+                    [1, 0, 0, 0],
+                    [0, -1, 0, 0],
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0]
+                    ])
+dyn.ctrl_dyn_gen = [A_rot, A_sqz]  
+n_ctrls = dyn.get_num_ctrls()
+
+dyn.initial = identity(4).full()
 
 # Target
-a = 1
-Ag = np.array([[0, 0, a, 0], 
-                [0, 0, 0, a], 
-                [a, 0, 0, 0], 
-                [0, a, 0, 0]])
-               
-Sg = Qobj(sympl.calc_omega(2).dot(Ag)).expm()
+A_targ = Qobj(np.array([
+                [0, 0, 1, 0], 
+                [0, 0, 0, 1], 
+                [1, 0, 0, 0], 
+                [0, 1, 0, 0]
+                ]))
+          
+Omg = Qobj(sympl.calc_omega(2))
+print("Omega:\n{}\n".format(Omg))
+
+S_targ = (-A_targ*Omg*np.pi/2.0).expm()
+dyn.target = S_targ.full()
+#S_targ = (Omg*A_targ*np.pi/2.0).expm()
+print("Target S:\n{}\n".format(S_targ))
 
 
-# ***** Define time evolution parameters *****
-# Number of time slots
-n_ts = 1000
-# Time allowed for the evolution
-evo_time = 10
-
-# ***** Define the termination conditions *****
-# Fidelity error target
-fid_err_targ = 1e-10
-# Maximum iterations for the optisation algorithm
-max_iter = 500
-# Maximum (elapsed) time allowed in seconds
-max_wall_time = 30
-# Minimum gradient (sum of gradients squared)
-# as this tends to 0 -> local minima has been found
-min_grad = 1e-20
+# Initialise the dynamics
+init_amps = np.zeros([n_ts, n_ctrls])
+for j in range(n_ctrls):
+    init_amps[:, j] = p_gen.gen_pulse()
+dyn.initialize_controls(init_amps)
 
 
-# Initial pulse type
-# pulse type alternatives: RND|ZERO|LIN|SINE|SQUARE|SAW|TRIANGLE|
-p_type = 'ZERO'
-# *************************************************************
-# File extension for output files
-
-f_ext = "{}_n_ts{}_ptype{}.txt".format(example_name, n_ts, p_type)
+f_ext = "{}_n_ts{}_ptype{}.txt".format(example_name, n_ts, cfg.pulse_type)
 
 # Run the optimisation
 print ""
 print "***********************************"
 print "Starting pulse optimisation"
-# Note that this call uses
-#    dyn_type='SYMPL'
-# This means that matrices that describe the dynamics are assumed to be
-# Symplectic, i.e. the propagator can be calculated using 
-# expm(combined_dynamics.omega*dt)
-# This has defaults for:
-#    prop_type='FRECHET'
-# therefore the propagators and their gradients will be calculated using the
-# Frechet method, i.e. an exact gradent
-#    fid_type='TRACEDIFF'
-# so that the fidelity error, i.e. distance from the target, is give
-# by the trace of the difference between the target and evolved operators 
-result = cpo.optimize_pulse(A0, ctrls, initial, Sg, n_ts, evo_time, 
-                fid_err_targ=fid_err_targ, min_grad=min_grad, 
-                max_iter=max_iter, max_wall_time=max_wall_time, 
-                dyn_type='SYMPL', \
-                out_file_ext=f_ext, init_pulse_type=p_type, 
-                log_level=log_level, gen_stats=True)
+result = optim.run_optimization()
 
 print ""
 print "***********************************"
@@ -131,6 +210,7 @@ print result.evo_full_final
 print ""
 
 print "********* Summary *****************"
+print "Initial fidelity error {}".format(result.initial_fid_err)
 print "Final fidelity error {}".format(result.fid_err)
 print "Terminated due to {}".format(result.termination_reason)
 print "Number of iterations {}".format(result.num_iter)

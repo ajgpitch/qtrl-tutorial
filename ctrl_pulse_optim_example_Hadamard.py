@@ -46,14 +46,11 @@ import qutip.control.pulseoptim as cpo
 
 example_name = 'Hadamard'
 log_level = logging.INFO
+
 # ****************************************************************
 # Define the physics of the problem
 
 nSpins = 1
-#Sx = np.array([[0, 1], [1, 0]], dtype=complex)
-#Sy = np.array([[0, -1j], [1j, 0]], dtype=complex)
-#Sz = np.array([[1, 0], [0, -1]], dtype=complex)
-#Si = mat.eye(2)/2
 
 H_d = sigmaz()
 H_c = [sigmax()]

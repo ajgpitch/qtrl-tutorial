@@ -46,7 +46,7 @@ import matplotlib.pyplot as plt
 import datetime
 
 #QuTiP
-from qutip import Qobj, identity
+from qutip import Qobj, identity, sigmax, sigmay, sigmaz, tensor
 import qutip.logging as logging
 logger = logging.get_logger()
 #QuTiP control modules
@@ -58,29 +58,20 @@ example_name = 'QFT'
 log_level=logging.INFO
 # ****************************************************************
 # Define the physics of the problem
-nSpins = 2
-Sx = np.array([[0, 1], [1, 0]], dtype=complex)
-Sy = np.array([[0, -1j], [1j, 0]], dtype=complex)
-Sz = np.array([[1, 0], [0, -1]], dtype=complex)
-Si = mat.eye(2)/2
+Sx = sigmax()
+Sy = sigmay()
+Sz = sigmaz()
+Si = 0.5*identity(2)
 
-H_d = Qobj(0.5*(kron(Sx, Sx) + kron(Sy, Sy) + kron(Sz, Sz)))
-H_c = [Qobj(kron(Sx, Si)), Qobj(kron(Sy, Si)), 
-           Qobj(kron(Si, Sx)), Qobj(kron(Si, Sy))]
+# Drift Hamiltonian
+H_d = 0.5*(tensor(Sx, Sx) + tensor(Sy, Sy) + tensor(Sz, Sz))
+# The (four) control Hamiltonians
+H_c = [tensor(Sx, Si), tensor(Sy, Si), tensor(Si, Sx), tensor(Si, Sy)]
 n_ctrls = len(H_c)
-
-U_0 = identity(2**nSpins)
-
-# Quantum Fourier Transform gate
-# This produces values with small rounding errors
-U_targ = qft.qft(nSpins)
-# can use this for nSpins=2
-#U_targ = np.array([
-#    [0.5+0.0j,  0.5+0.0j,  0.5+0.0j,  0.5+0.0j],
-#    [0.5+0.0j,  0.0+0.5j, -0.5+0.0j, -0.0-0.5j],
-#    [0.5+0.0j, -0.5+0.0j,  0.5+0.0j, -0.5+0.0j],
-#    [0.5+0.0j,  0.0-0.5j, -0.5+0.0j,  0.0+0.5j],
-#    ])
+# start point for the gate evolution
+U_0 = identity(4)
+# Target for the gate evolution - Quantum Fourier Transform gate
+U_targ = qft.qft(2)
 
 # ***** Define time evolution parameters *****
 # Number of time slots
