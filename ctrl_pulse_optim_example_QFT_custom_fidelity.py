@@ -44,6 +44,7 @@ import numpy.matlib as mat
 from numpy.matlib import kron
 import matplotlib.pyplot as plt
 import datetime
+import timeit
 
 #QuTiP
 from qutip import Qobj, identity, sigmax, sigmay, sigmaz, tensor
@@ -52,10 +53,142 @@ logger = logging.get_logger()
 #QuTiP control modules
 import qutip.control.pulseoptim as cpo
 import qutip.control.pulsegen as pulsegen
+import qutip.control.fidcomp as fidcomp
 from qutip.qip.algorithms import qft
 
 example_name = 'QFT'
-log_level=logging.INFO
+log_level=logging.DEBUG
+logger.setLevel(log_level)
+
+class FidCompCustom(fidcomp.FidCompUnitary):
+    """
+    Customised fidelity computer based on the Unitary fidelity computer
+    At this stage it does nothing different other than print a DEBUG message
+    to say that it is 'custom'
+    Note: It is recommended to put this class in a separate file in a real
+        project
+    """
+
+    def get_fid_err(self):
+        """
+        Note: This a copy from FidCompUnitary, if you don't need to change it
+                then remove it
+        Gets the absolute error in the fidelity
+        """
+        return np.abs(1 - self.get_fidelity())
+
+    def get_fidelity(self):
+        """
+        Note: This a copy from FidCompUnitary, if you don't need to change it
+                then remove it
+        Gets the appropriately normalised fidelity value
+        The normalisation is determined by the fid_norm_func pointer
+        which should be set in the config
+        """
+        if not self.fidelity_current:
+            self.fidelity = \
+                self.fid_norm_func(self.get_fidelity_prenorm())
+            self.fidelity_current = True
+            if self.log_level <= logging.DEBUG:
+                logger.debug("Fidelity (normalised): {}".format(self.fidelity))
+
+        return self.fidelity
+
+    def get_fidelity_prenorm(self):
+        """
+        Gets the current fidelity value prior to normalisation
+        Note the gradient function uses this value
+        The value is cached, because it is used in the gradient calculation
+        """
+        if not self.fidelity_prenorm_current:
+            dyn = self.parent
+            if self.log_level <= logging.DEBUG:
+                logger.debug("**** Computing custom fidelity ****")
+            k = dyn.tslot_computer.get_timeslot_for_fidelity_calc()
+            dyn.compute_evolution()
+            # **** CUSTOMISE this line below *****
+            f = np.trace(dyn.evo_init2t[k].dot(dyn.evo_t2targ[k]))
+            self.fidelity_prenorm = f
+            self.fidelity_prenorm_current = True
+            if dyn.stats is not None:
+                    dyn.stats.num_fidelity_computes += 1
+            if self.log_level <= logging.DEBUG:
+                logger.debug("Fidelity (pre normalisation): {}".format(
+                    self.fidelity_prenorm))
+        return self.fidelity_prenorm
+
+    def get_fid_err_gradient(self):
+        """
+        Note: This a copy from FidCompUnitary, if you don't need to change it
+                then remove it
+        Returns the normalised gradient of the fidelity error
+        in a (nTimeslots x n_ctrls) array
+        The gradients are cached in case they are requested
+        mutliple times between control updates
+        (although this is not typically found to happen)
+        """
+        if not self.fid_err_grad_current:
+            dyn = self.parent
+            grad_prenorm = self.compute_fid_grad()
+            if self.log_level <= logging.DEBUG_INTENSE:
+                logger.log(logging.DEBUG_INTENSE, "pre-normalised fidelity "
+                           "gradients:\n{}".format(grad_prenorm))
+            # AJGP: Note this check should not be necessary if dynamics are
+            #       unitary. However, if they are not then this gradient
+            #       can still be used, however the interpretation is dubious
+            if self.get_fidelity() >= 1:
+                self.fid_err_grad = self.grad_norm_func(grad_prenorm)
+            else:
+                self.fid_err_grad = -self.grad_norm_func(grad_prenorm)
+
+            self.fid_err_grad_current = True
+            if dyn.stats is not None:
+                dyn.stats.num_grad_computes += 1
+
+            self.grad_norm = np.sqrt(np.sum(self.fid_err_grad**2))
+            if self.log_level <= logging.DEBUG_INTENSE:
+                logger.log(logging.DEBUG_INTENSE, "Normalised fidelity error "
+                           "gradients:\n{}".format(self.fid_err_grad))
+
+            if self.log_level <= logging.DEBUG:
+                logger.debug("Gradient (sum sq norm): "
+                             "{} ".format(self.grad_norm))
+
+        return self.fid_err_grad
+
+    def compute_fid_grad(self):
+        """
+        Calculates exact gradient of function wrt to each timeslot
+        control amplitudes. Note these gradients are not normalised
+        These are returned as a (nTimeslots x n_ctrls) array
+        """
+        dyn = self.parent
+        n_ctrls = dyn.get_num_ctrls()
+        n_ts = dyn.num_tslots
+        
+        if self.log_level <= logging.DEBUG:
+            logger.debug("**** Computing custom fidelity gradient ****")
+
+        # create n_ts x n_ctrls zero array for grad start point
+        grad = np.zeros([n_ts, n_ctrls], dtype=complex)
+
+        dyn.tslot_computer.flag_all_calc_now()
+        dyn.compute_evolution()
+
+        # loop through all ctrl timeslots calculating gradients
+        time_st = timeit.default_timer()
+        for j in range(n_ctrls):
+            for k in range(n_ts):
+                owd_evo = dyn.evo_t2targ[k+1]
+                fwd_evo = dyn.evo_init2t[k]
+                # **** CUSTOMISE this line below *****
+                g = np.trace(owd_evo.dot(dyn.prop_grad[k, j]).dot(fwd_evo))
+                grad[k, j] = g
+        if dyn.stats is not None:
+            dyn.stats.wall_time_gradient_compute += \
+                timeit.default_timer() - time_st
+        return grad
+        
 # ****************************************************************
 # Define the physics of the problem
 Sx = sigmax()
@@ -92,7 +225,7 @@ min_grad = 1e-20
 
 # Initial pulse type
 # pulse type alternatives: RND|ZERO|LIN|SINE|SQUARE|SAW|TRIANGLE|
-p_type = 'CRABFOURIER'
+p_type = 'RNDWAVES'
 # *************************************************************
 # File extension for output files
 
@@ -111,7 +244,7 @@ optim = cpo.create_pulse_optimizer(H_d, H_c, U_0, U_targ, n_ts, evo_time,
                 optim_method='l-bfgs-b',
                 dyn_type='UNIT', 
                 prop_type='DIAG', 
-                fid_type='UNIT', fid_params={'phase_option':'SU'}, 
+                fid_type='UNIT', fid_params={'phase_option':'PSU'}, 
                 init_pulse_type=p_type, pulse_scaling=1.0,
                 log_level=log_level, gen_stats=True)
                 
@@ -121,14 +254,9 @@ print "Configuring optimiser objects"
 # **** Set some optimiser config parameters ****
 optim.test_out_files = 0
 dyn = optim.dynamics
+# **** CUSTOMISE this is where the custom fidelity is specified *****
+dyn.fid_computer = FidCompCustom(dyn)
 
-# check method params
-#print("max_metric_corr: {}".format(optim.max_metric_corr))
-#print("accuracy_factor: {}".format(optim.accuracy_factor))
-#print("phase_option: {}".format(dyn.fid_computer.phase_option))
-
-
-dyn.test_out_files = 0
 # Generate different pulses for each control
 p_gen = optim.pulse_generator
 init_amps = np.zeros([n_ts, n_ctrls])
