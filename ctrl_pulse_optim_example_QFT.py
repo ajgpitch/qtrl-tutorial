@@ -81,7 +81,7 @@ evo_time = 10
 
 # ***** Define the termination conditions *****
 # Fidelity error target
-fid_err_targ = 1e-5
+fid_err_targ = 1e-14
 # Maximum iterations for the optisation algorithm
 max_iter = 200
 # Maximum (elapsed) time allowed in seconds
@@ -98,29 +98,32 @@ p_type = 'CRABFOURIER'
 
 f_ext = "{}_n_ts{}_ptype{}.txt".format(example_name, n_ts, p_type)
 
-print ""
-print "***********************************"
-print "Creating optimiser objects"
+print("")
+print("***********************************")
+print("Creating optimiser objects")
 optim = cpo.create_pulse_optimizer(H_d, H_c, U_0, U_targ, n_ts, evo_time, 
                 amp_lbound=-10.0, amp_ubound=10.0, 
                 fid_err_targ=fid_err_targ, min_grad=min_grad, 
                 max_iter=max_iter, max_wall_time=max_wall_time, 
 #                optim_method='LBFGSB', 
-#                method_params={'max_metric_corr':20, 'accuracy_factor':1e8},
-#                optim_method='fmin_l_bfgs_b',
-                optim_method='l-bfgs-b',
+                method_params={'max_metric_corr':40, 'accuracy_factor':1e7,
+                                'ftol':1e-7},
+                optim_method='fmin_l_bfgs_b',
+#                optim_method='l-bfgs-b',
                 dyn_type='UNIT', 
                 prop_type='DIAG', 
-                fid_type='UNIT', fid_params={'phase_option':'SU'}, 
+                fid_type='UNIT', fid_params={'phase_option':'PSU'}, 
                 init_pulse_type=p_type, pulse_scaling=1.0,
                 log_level=log_level, gen_stats=True)
-                
-print ""
-print "***********************************"
-print "Configuring optimiser objects"
+
+print("")
+print("***********************************")
+print("Configuring optimiser objects")
 # **** Set some optimiser config parameters ****
 optim.test_out_files = 0
 dyn = optim.dynamics
+
+print("Phase option: {}".format(dyn.fid_computer.phase_option))
 
 # check method params
 #print("max_metric_corr: {}".format(optim.max_metric_corr))
@@ -155,36 +158,32 @@ dyn.initialize_controls(init_amps)
 pulsefile = "ctrl_amps_initial_" + f_ext
 dyn.save_amps(pulsefile)
 if (log_level <= logging.INFO):
-    print "Initial amplitudes output to file: " + pulsefile
+    print("Initial amplitudes output to file: " + pulsefile)
 
-print "***********************************"
-print "Starting pulse optimisation"
+print("***********************************")
+print("Starting pulse optimisation")
 result = optim.run_optimization()
 
 # Save final amplitudes to a text file
 pulsefile = "ctrl_amps_final_" + f_ext
 dyn.save_amps(pulsefile)
 if (log_level <= logging.INFO):
-    print "Final amplitudes output to file: " + pulsefile
+    print("Final amplitudes output to file: " + pulsefile)
         
-print ""
-print "***********************************"
-print "Optimising complete. Stats follow:"
+print("\n***********************************")
+print("Optimising complete. Stats follow:")
 result.stats.report()
-print ""
-print "Final evolution"
-print result.evo_full_final
-print ""
+print("Final evolution\n{}\n".format(result.evo_full_final))
 
-print "********* Summary *****************"
-print "Final fidelity error {}".format(result.fid_err)
-print "Terminated due to {}".format(result.termination_reason)
-print "Number of iterations {}".format(result.num_iter)
+print("********* Summary *****************")
+print("Final fidelity error {}".format(result.fid_err))
+print("Terminated due to {}".format(result.termination_reason))
+print("Number of iterations {}".format(result.num_iter))
 #print "wall time: ", result.wall_time
-print "Completed in {} HH:MM:SS.US".\
-        format(datetime.timedelta(seconds=result.wall_time))
+print("Completed in {} HH:MM:SS.US".format(
+        datetime.timedelta(seconds=result.wall_time)))
 # print "Final gradient normal {}".format(result.grad_norm_final)
-print "***********************************"
+print("***********************************")
 
 # Plot the initial and final amplitudes
 fig1 = plt.figure()
