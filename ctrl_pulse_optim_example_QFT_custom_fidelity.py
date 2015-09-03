@@ -229,9 +229,8 @@ p_type = 'RNDWAVES'
 
 f_ext = "{}_n_ts{}_ptype{}.txt".format(example_name, n_ts, p_type)
 
-print ""
-print "***********************************"
-print "Creating optimiser objects"
+print("\n***********************************")
+print("Creating optimiser objects")
 optim = cpo.create_pulse_optimizer(H_d, H_c, U_0, U_targ, n_ts, evo_time, 
                 amp_lbound=-10.0, amp_ubound=10.0, 
                 fid_err_targ=fid_err_targ, min_grad=min_grad, 
@@ -246,9 +245,8 @@ optim = cpo.create_pulse_optimizer(H_d, H_c, U_0, U_targ, n_ts, evo_time,
                 init_pulse_type=p_type, pulse_scaling=1.0,
                 log_level=log_level, gen_stats=True)
                 
-print ""
-print "***********************************"
-print "Configuring optimiser objects"
+print("\n***********************************")
+print("Configuring optimiser objects")
 # **** Set some optimiser config parameters ****
 optim.test_out_files = 0
 dyn = optim.dynamics
@@ -281,36 +279,32 @@ dyn.initialize_controls(init_amps)
 pulsefile = "ctrl_amps_initial_" + f_ext
 dyn.save_amps(pulsefile)
 if (log_level <= logging.INFO):
-    print "Initial amplitudes output to file: " + pulsefile
+    print("Initial amplitudes output to file: " + pulsefile)
 
-print "***********************************"
-print "Starting pulse optimisation"
+print("***********************************")
+print("Starting pulse optimisation")
 result = optim.run_optimization()
 
 # Save final amplitudes to a text file
 pulsefile = "ctrl_amps_final_" + f_ext
 dyn.save_amps(pulsefile)
 if (log_level <= logging.INFO):
-    print "Final amplitudes output to file: " + pulsefile
+    print("Final amplitudes output to file: " + pulsefile)
         
-print ""
-print "***********************************"
-print "Optimising complete. Stats follow:"
+print("\n***********************************")
+print("Optimising complete. Stats follow:")
 result.stats.report()
-print ""
-print "Final evolution"
-print result.evo_full_final
-print ""
+print("Final evolution\n{}\n".format(result.evo_full_final))
 
-print "********* Summary *****************"
-print "Final fidelity error {}".format(result.fid_err)
-print "Terminated due to {}".format(result.termination_reason)
-print "Number of iterations {}".format(result.num_iter)
+print("********* Summary *****************")
+print("Final fidelity error {}".format(result.fid_err))
+print("Terminated due to {}".format(result.termination_reason))
+print("Number of iterations {}".format(result.num_iter))
 #print "wall time: ", result.wall_time
-print "Completed in {} HH:MM:SS.US".\
-        format(datetime.timedelta(seconds=result.wall_time))
+print("Completed in {} HH:MM:SS.US".format(
+        datetime.timedelta(seconds=result.wall_time)))
 # print "Final gradient normal {}".format(result.grad_norm_final)
-print "***********************************"
+print("***********************************")
 
 # Plot the initial and final amplitudes
 fig1 = plt.figure()

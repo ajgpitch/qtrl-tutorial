@@ -92,14 +92,13 @@ min_grad = 1e-20
 
 # Initial pulse type
 # pulse type alternatives: RND|ZERO|LIN|SINE|SQUARE|SAW|TRIANGLE|
-p_type = 'CRABFOURIER'
+p_type = 'CRAB_FOURIER'
 # *************************************************************
 # File extension for output files
 
 f_ext = "{}_n_ts{}_ptype{}.txt".format(example_name, n_ts, p_type)
 
-print("")
-print("***********************************")
+print("\n***********************************")
 print("Creating optimiser objects")
 optim = cpo.create_pulse_optimizer(H_d, H_c, U_0, U_targ, n_ts, evo_time, 
                 amp_lbound=-10.0, amp_ubound=10.0, 
@@ -116,8 +115,7 @@ optim = cpo.create_pulse_optimizer(H_d, H_c, U_0, U_targ, n_ts, evo_time,
                 init_pulse_type=p_type, pulse_scaling=1.0,
                 log_level=log_level, gen_stats=True)
 
-print("")
-print("***********************************")
+print("\n***********************************")
 print("Configuring optimiser objects")
 # **** Set some optimiser config parameters ****
 optim.test_out_files = 0
@@ -150,6 +148,7 @@ elif (isinstance(p_gen, pulsegen.PulseGenZero)):
 else:
     # Should be random pulse
     for j in range(n_ctrls):
+        p_gen.init_pulse()
         init_amps[:, j] = p_gen.gen_pulse()
 
 dyn.initialize_controls(init_amps)

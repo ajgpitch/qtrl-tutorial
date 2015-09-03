@@ -31,12 +31,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import datetime
 
-#for p in sys.path:
-#    print p
-#    
-#sys.exit()
-
-#QuTiP
 from qutip import Qobj, identity, sigmax, sigmaz
 from qutip.qip import hadamard_transform
 import qutip.logging as logging
@@ -69,7 +63,7 @@ evo_time = 10
 
 # ***** Define the termination conditions *****
 # Fidelity error target
-fid_err_targ = 1e-10
+fid_err_targ = 1e-14
 # Maximum iterations for the optisation algorithm
 max_iter = 200
 # Maximum (elapsed) time allowed in seconds
@@ -88,34 +82,28 @@ p_type = 'RND'
 f_ext = "{}_n_ts{}_ptype{}.txt".format(example_name, n_ts, p_type)
 
 # Run the optimisation
-print ""
-print "***********************************"
-print "Starting pulse optimisation"
+print("\n***********************************")
+print("Starting pulse optimisation")
 result = cpo.optimize_pulse_unitary(H_d, H_c, U_0, U_targ, n_ts, evo_time, 
                 fid_err_targ=fid_err_targ, min_grad=min_grad, 
                 max_iter=max_iter, max_wall_time=max_wall_time, 
                 out_file_ext=f_ext, init_pulse_type=p_type, 
                 log_level=log_level, gen_stats=True)
 
-print ""
-print "***********************************"
-print "Optimising complete. Stats follow:"
+print("\n***********************************")
+print("Optimising complete. Stats follow:")
 result.stats.report()
-print ""
-print "Final evolution"
-print result.evo_full_final
-print ""
+print("\nFinal evolution\n{}\n".format(result.evo_full_final))
 
-print "********* Summary *****************"
-print "Final fidelity error {}".format(result.fid_err)
+print("********* Summary *****************")
+print("Final fidelity error {}".format(result.fid_err))
 print("Final gradient normal {}".format(result.grad_norm_final))
-print "Terminated due to {}".format(result.termination_reason)
-print "Number of iterations {}".format(result.num_iter)
-#print "wall time: ", result.wall_time
-print "Completed in {} HH:MM:SS.US".\
-        format(datetime.timedelta(seconds=result.wall_time))
-print "***********************************"
-
+print("Terminated due to {}".format(result.termination_reason))
+print("Number of iterations {}".format(result.num_iter))
+#print("wall time: ", result.wall_time
+print("Completed in {} HH:MM:SS.US".\
+        format(datetime.timedelta(seconds=result.wall_time)))
+print("***********************************")
 # Plot the initial and final amplitudes
 fig1 = plt.figure()
 ax1 = fig1.add_subplot(2, 1, 1)

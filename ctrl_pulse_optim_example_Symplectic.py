@@ -132,7 +132,7 @@ optim.pulse_generator = p_gen
     
 # load the optimiser parameters
 # note these will overide those above if present in the file
-print "Loading optimiser parameters from {}".format(cfg.param_fpath)
+print("Loading optimiser parameters from {}".format(cfg.param_fpath))
 loadparams.load_parameters(cfg.param_fpath, optim=optim)
     
 # ****************************************************************
@@ -194,31 +194,30 @@ dyn.initialize_controls(init_amps)
 
 f_ext = "{}_n_ts{}_ptype{}.txt".format(example_name, n_ts, cfg.pulse_type)
 
-# Run the optimisation
-print ""
-print "***********************************"
-print "Starting pulse optimisation"
+print("***********************************")
+print("Starting pulse optimisation")
 result = optim.run_optimization()
 
-print ""
-print "***********************************"
-print "Optimising complete. Stats follow:"
+# Save final amplitudes to a text file
+pulsefile = "ctrl_amps_final_" + f_ext
+dyn.save_amps(pulsefile)
+if (log_level <= logging.INFO):
+    print("Final amplitudes output to file: " + pulsefile)
+        
+print("\n***********************************")
+print("Optimising complete. Stats follow:")
 result.stats.report()
-print ""
-print "Final evolution"
-print result.evo_full_final
-print ""
+print("Final evolution\n{}\n".format(result.evo_full_final))
 
-print "********* Summary *****************"
-print "Initial fidelity error {}".format(result.initial_fid_err)
-print "Final fidelity error {}".format(result.fid_err)
-print "Terminated due to {}".format(result.termination_reason)
-print "Number of iterations {}".format(result.num_iter)
+print("********* Summary *****************")
+print("Final fidelity error {}".format(result.fid_err))
+print("Terminated due to {}".format(result.termination_reason))
+print("Number of iterations {}".format(result.num_iter))
 #print "wall time: ", result.wall_time
-print "Completed in {} HH:MM:SS.US".\
-        format(datetime.timedelta(seconds=result.wall_time))
+print("Completed in {} HH:MM:SS.US".format(
+        datetime.timedelta(seconds=result.wall_time)))
 # print "Final gradient normal {}".format(result.grad_norm_final)
-print "***********************************"
+print("***********************************")
 
 # Plot the initial and final amplitudes
 fig1 = plt.figure()

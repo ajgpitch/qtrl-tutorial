@@ -24,8 +24,6 @@ The initial and final pulses are displayed in a plot
 
 """
 import numpy as np
-import numpy.matlib as mat
-from numpy.matlib import kron
 import matplotlib.pyplot as plt
 import datetime
 import timeit
@@ -38,11 +36,9 @@ logger = logging.get_logger()
 #QuTiP control modules
 import qutip.control.pulseoptim as cpo
 import qutip.control.fidcomp as fidcomp
+import qutip.control.errors as errors
 
-
-import IM_fid
-
-example_name = 'Lindblad'
+example_name = 'Lindblad-cust_fid'
 log_level = logging.INFO
 
 class FidCompCustom(fidcomp.FidelityComputer):
@@ -271,9 +267,8 @@ p_type = 'LIN'
 f_ext = "{}_n_ts{}_ptype{}.txt".format(example_name, n_ts, p_type)
 
 # Run the optimisation
-print ""
-print "***********************************"
-print "Starting pulse optimisation"
+print("***********************************")
+print("Starting pulse optimisation")
 # Note that this call will take the defaults
 #    dyn_type='GEN_MAT'
 # This means that matrices that describe the dynamics are assumed to be
@@ -295,7 +290,7 @@ optim = cpo.create_pulse_optimizer(drift, ctrls, initial, target_DP, n_ts, evo_t
 dyn = optim.dynamics
 pgen = optim.pulse_generator
 # **** CUSTOMISE this is where the custom fidelity is specified *****
-dyn.fid_computer = IM_fid.QRICMfid(dyn)
+dyn.fid_computer = FidCompCustom(dyn)
 
 p_gen = optim.pulse_generator
 init_amps = np.zeros([n_ts, n_ctrls])
@@ -308,30 +303,26 @@ dyn.initialize_controls(init_amps)
 pulsefile = "ctrl_amps_initial_" + f_ext
 dyn.save_amps(pulsefile)
 if (log_level <= logging.INFO):
-    print "Initial amplitudes output to file: " + pulsefile
+    print("Initial amplitudes output to file: " + pulsefile)
 
-print "***********************************"
-print "Starting pulse optimisation"
+print("***********************************")
+print("Starting pulse optimisation")
 result = optim.run_optimization()
 
-print ""
-print "***********************************"
-print "Optimising complete. Stats follow:"
+print("\n***********************************")
+print("Optimising complete. Stats follow:")
 result.stats.report()
-print ""
-print "Final evolution"
-print result.evo_full_final
-print ""
+print("Final evolution\n{}\n".format(result.evo_full_final))
 
-print "********* Summary *****************"
-print "Final fidelity error {}".format(result.fid_err)
-print "Terminated due to {}".format(result.termination_reason)
-print "Number of iterations {}".format(result.num_iter)
-#print "wall time: ", result.wall_time
-print "Completed in {} HH:MM:SS.US".\
-        format(datetime.timedelta(seconds=result.wall_time))
-# print "Final gradient normal {}".format(result.grad_norm_final)
-print "***********************************"
+print("********* Summary *****************")
+print("Final fidelity error {}".format(result.fid_err))
+print("Terminated due to {}".format(result.termination_reason))
+print("Number of iterations {}".format(result.num_iter))
+#print("wall time: ", result.wall_time
+print("Completed in {} HH:MM:SS.US".\
+        format(datetime.timedelta(seconds=result.wall_time)))
+# print("Final gradient normal {}".format(result.grad_norm_final)
+print("***********************************")
 
 # Plot the initial and final amplitudes
 fig1 = plt.figure()

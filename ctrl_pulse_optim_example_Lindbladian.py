@@ -109,9 +109,8 @@ p_type = 'LIN'
 f_ext = "{}_n_ts{}_ptype{}.txt".format(example_name, n_ts, p_type)
 
 # Run the optimisation
-print ""
-print "***********************************"
-print "Starting pulse optimisation"
+print("\n***********************************")
+print("Starting pulse optimisation")
 # Note that this call will take the defaults
 #    dyn_type='GEN_MAT'
 # This means that matrices that describe the dynamics are assumed to be
@@ -129,24 +128,20 @@ result = cpo.optimize_pulse(drift, ctrls, initial, target_DP, n_ts, evo_time,
                 out_file_ext=f_ext, init_pulse_type=p_type, 
                 log_level=log_level, gen_stats=True)
 
-print ""
-print "***********************************"
-print "Optimising complete. Stats follow:"
+print("***********************************")
+print("\nOptimising complete. Stats follow:")
 result.stats.report()
-print ""
-print "Final evolution"
-print result.evo_full_final
-print ""
+print("Final evolution\n{}\n".format(result.evo_full_final))
 
-print "********* Summary *****************"
-print "Final fidelity error {}".format(result.fid_err)
-print "Terminated due to {}".format(result.termination_reason)
-print "Number of iterations {}".format(result.num_iter)
-#print "wall time: ", result.wall_time
-print "Completed in {} HH:MM:SS.US".\
-        format(datetime.timedelta(seconds=result.wall_time))
-# print "Final gradient normal {}".format(result.grad_norm_final)
-print "***********************************"
+print("********* Summary *****************")
+print("Final fidelity error {}".format(result.fid_err))
+print("Terminated due to {}".format(result.termination_reason))
+print("Number of iterations {}".format(result.num_iter))
+#print("wall time: ", result.wall_time
+print("Completed in {} HH:MM:SS.US".\
+        format(datetime.timedelta(seconds=result.wall_time)))
+# print("Final gradient normal {}".format(result.grad_norm_final)
+print("***********************************")
 
 # Plot the initial and final amplitudes
 fig1 = plt.figure()

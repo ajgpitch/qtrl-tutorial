@@ -101,9 +101,8 @@ p_type = 'LIN'
 # *************************************************************
 # File extension for output files
 
-print ""
-print "***********************************"
-print "Creating optimiser objects"
+print("\n***********************************")
+print("Creating optimiser objects")
 optim = cpo.create_pulse_optimizer(H_d, H_c, U_0, U_targ, n_ts, evo_time, 
                 amp_lbound=-5.0, amp_ubound=5.0, 
                 fid_err_targ=fid_err_targ, min_grad=min_grad, 
@@ -115,9 +114,8 @@ optim = cpo.create_pulse_optimizer(H_d, H_c, U_0, U_targ, n_ts, evo_time,
                 init_pulse_type=p_type, 
                 log_level=log_level, gen_stats=True)
                 
-print ""
-print "***********************************"
-print "Configuring optimiser objects"
+print("\n***********************************")
+print("Configuring optimiser objects")
 
 # **** get handles to the other objects ****
 optim.test_out_files = 0
@@ -171,7 +169,7 @@ for i in range(n_evo_times):
     pulsefile = "ctrl_amps_final_" + f_ext
     dyn.save_amps(pulsefile)
     if (log_level <= logging.INFO):
-        print "Final amplitudes output to file: " + pulsefile
+        print("Final amplitudes output to file: " + pulsefile)
             
     print("\n***********************************")
     print("Optimising complete. Stats follow:")
@@ -183,7 +181,6 @@ for i in range(n_evo_times):
     print("Final fidelity error {}".format(result.fid_err))
     print("Terminated due to {}".format(result.termination_reason))
     print("Number of iterations {}".format(result.num_iter))
-    #print "wall time: ", result.wall_time
     print("Completed in {} HH:MM:SS.US".\
             format(datetime.timedelta(seconds=result.wall_time)))
     print("Final gradient normal {}".format(result.grad_norm_final))
