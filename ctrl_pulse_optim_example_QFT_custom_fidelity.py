@@ -12,11 +12,10 @@ The code in this file was is intended for use in not-for-profit research,
 teaching, and learning. Any other applications may require additional
 licensing
 
-Example to demonstrate using the control library to determine control
-pulses using the ctrlpulseoptim.create_pulse_optimizer function to 
-generate an Optimizer object, through which the configuration can be
-manipulated before running the optmisation algorithm. In this case it is
-demonstrated by modifying the initial ctrl pulses.
+The main purpose of this file is to demonstrate how to implement and use
+a custom fidelity class. It is otherwise the same as the QFT example.
+For convenience the custom fidelity class is implemented in this file,
+however, it is probably better practice to implement it in its own file
 
 The (default) L-BFGS-B algorithm is used to optimise the pulse to
 minimise the fidelity error, which is equivalent maximising the fidelity
@@ -28,7 +27,6 @@ The target evolution is the QFT gate. The user can experiment with the
 different:
     phase options - phase_option = SU or PSU
     propagtor computer type prop_type = DIAG or FRECHET
-    fidelity measures - fid_type = UNIT or TRACEDIFF
 
 The user can experiment with the timeslicing, by means of changing the
 number of timeslots and/or total time for the evolution.
