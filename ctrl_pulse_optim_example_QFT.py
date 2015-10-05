@@ -44,6 +44,9 @@ import numpy.matlib as mat
 from numpy.matlib import kron
 import matplotlib.pyplot as plt
 import datetime
+from scipy.optimize import check_grad
+from numpy.testing import (
+    assert_, assert_almost_equal, run_module_suite, assert_equal)
 
 #QuTiP
 from qutip import Qobj, identity, sigmax, sigmay, sigmaz, tensor
@@ -75,7 +78,7 @@ U_targ = qft.qft(2)
 
 # ***** Define time evolution parameters *****
 # Number of time slots
-n_ts = 100
+n_ts = 10
 # Time allowed for the evolution
 evo_time = 10
 
@@ -90,9 +93,11 @@ max_wall_time = 120
 # as this tends to 0 -> local minima has been found
 min_grad = 1e-20
 
+check_gradient = False
+
 # Initial pulse type
 # pulse type alternatives: RND|ZERO|LIN|SINE|SQUARE|SAW|TRIANGLE|
-p_type = 'CRAB_FOURIER'
+p_type = 'LIN'
 # *************************************************************
 # File extension for output files
 
@@ -100,7 +105,7 @@ f_ext = "{}_n_ts{}_ptype{}.txt".format(example_name, n_ts, p_type)
 
 print("\n***********************************")
 print("Creating optimiser objects")
-optim = cpo.create_pulse_optimizer(H_d, H_c, U_0, U_targ, n_ts, evo_time, 
+optim = cpo.create_pulse_optimizer(H_d, list(H_c), U_0, U_targ, n_ts, evo_time, 
                 amp_lbound=-10.0, amp_ubound=10.0, 
                 fid_err_targ=fid_err_targ, min_grad=min_grad, 
                 max_iter=max_iter, max_wall_time=max_wall_time, 
@@ -158,6 +163,15 @@ pulsefile = "ctrl_amps_initial_" + f_ext
 dyn.save_amps(pulsefile)
 if (log_level <= logging.INFO):
     print("Initial amplitudes output to file: " + pulsefile)
+    
+if check_gradient: 
+    print("***********************************")
+    print("Checking gradient")
+    func = optim.fid_err_func_wrapper
+    grad = optim.fid_err_grad_wrapper
+    x0 = dyn.ctrl_amps.flatten()
+    grad_diff = check_grad(func, grad, x0)
+    print("Normalised grad diff: {}".format(grad_diff))
 
 print("***********************************")
 print("Starting pulse optimisation")

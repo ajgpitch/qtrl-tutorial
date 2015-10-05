@@ -57,13 +57,13 @@ U_0 = identity(2**nSpins)
 U_targ = hadamard_transform(nSpins)
 # ***** Define time evolution parameters *****
 # Number of time slots
-n_ts = 500
+n_ts = 10
 # Time allowed for the evolution
-evo_time = 10
+evo_time = 6
 
 # ***** Define the termination conditions *****
 # Fidelity error target
-fid_err_targ = 1e-14
+fid_err_targ = 1e-10
 # Maximum iterations for the optisation algorithm
 max_iter = 200
 # Maximum (elapsed) time allowed in seconds
@@ -75,7 +75,7 @@ min_grad = 1e-20
 
 # Initial pulse type
 # pulse type alternatives: RND|ZERO|LIN|SINE|SQUARE|SAW|TRIANGLE|
-p_type = 'RND'
+p_type = 'LIN'
 # *************************************************************
 # File extension for output files
 
