@@ -11,11 +11,11 @@ The code in this file was is intended for use in not-for-profit research,
 teaching, and learning. Any other applications may require additional
 licensing
 
-Example to demonstrate using the control library to determine control
-pulses using the ctrlpulseoptim.optimize_pulse_unitary function.
-The (default) L-BFGS-B algorithm is used to optimise the pulse to
-minimise the fidelity error, which is equivalent maximising the fidelity
-to optimal value of 1.
+Example to demonstrate configuration through manual creation of the 
+the optimiser and its child objects. Note that this is not necessary for
+using the CRAB algorithm, it's just one way of configuring.
+See the main Hadamard example for how to call the CRAB alg using the 
+pulseoptim functions. 
 
 The system in this example is a single qubit in a constant field in z
 with a variable control field in x
@@ -36,9 +36,15 @@ from qutip.qip import hadamard_transform
 import qutip.logging as logging
 logger = logging.get_logger()
 #QuTiP control modules
-import qutip.control.pulseoptim as cpo
+import qutip.control.optimconfig as optimconfig
+import qutip.control.dynamics as dynamics
+import qutip.control.termcond as termcond
+import qutip.control.optimizer as optimizer
+import qutip.control.stats as stats
+import qutip.control.errors as errors
+import qutip.control.pulsegen as pulsegen
 
-example_name = 'Hadamard'
+example_name = 'Hadamard-CRAB-man_cfg'
 log_level = logging.INFO
 
 # ****************************************************************
@@ -46,49 +52,85 @@ log_level = logging.INFO
 
 nSpins = 1
 
-H_d = sigmaz()
-H_c = [sigmax()]
+# Note that for now the dynamics must be specified as ndarrays
+# when using manual config
+# This is until GitHub issue #370 is resolved
+H_d = sigmaz().full()
+H_c = [sigmax().full()]
 # Number of ctrls
 n_ctrls = len(H_c)
 
-U_0 = identity(2**nSpins)
+U_0 = identity(2**nSpins).full()
 # Hadamard gate
 #U_targ = Qobj(np.array([[1,1],[1,-1]], dtype=complex)/np.sqrt(2))
-U_targ = hadamard_transform(nSpins)
-# ***** Define time evolution parameters *****
-# Number of time slots
-n_ts = 10
-# Time allowed for the evolution
-evo_time = 6
+U_targ = hadamard_transform(nSpins).full()
 
-# ***** Define the termination conditions *****
-# Fidelity error target
-fid_err_targ = 1e-10
-# Maximum iterations for the optisation algorithm
-max_iter = 200
-# Maximum (elapsed) time allowed in seconds
-max_wall_time = 120
-# Minimum gradient (sum of gradients squared)
-# as this tends to 0 -> local minima has been found
-min_grad = 1e-20
+# Evolution parameters
+# time-slicing
+n_ts = 100
+# Total drive time
+evo_time = 6.0
 
+print("\n***********************************")
+print("Creating and configuring control optimisation objects")
 
-# Initial pulse type
-# pulse type alternatives: RND|ZERO|LIN|SINE|SQUARE|SAW|TRIANGLE|
-p_type = 'LIN'
+log_level = logging.DEBUG
+
+# Create the OptimConfig object
+cfg = optimconfig.OptimConfig()
+cfg.log_level = log_level
+
+# Create the dynamics object
+dyn = dynamics.DynamicsUnitary(cfg)
+dyn.num_tslots = n_ts
+dyn.evo_time = evo_time
+
+# Physical parameters
+dyn.target = U_targ
+dyn.initial = U_0
+dyn.drift_dyn_gen = H_d
+dyn.ctrl_dyn_gen = H_c
+
+# Create the TerminationConditions instance
+tc = termcond.TerminationConditions()
+tc.fid_err_targ = 1e-3
+tc.min_gradient_norm = 1e-10
+tc.max_iter_total = 200
+tc.max_wall_time_total = 30
+tc.break_on_targ = True
+
+optim = optimizer.OptimizerCrabFmin(cfg, dyn)
+
+sts = stats.Stats()
+dyn.stats = sts
+optim.stats = sts
+optim.config = cfg
+optim.dynamics = dyn
+optim.termination_conditions = tc
+
+guess_pgen = pulsegen.create_pulse_gen('LIN', dyn)
+init_amps = np.zeros([n_ts, n_ctrls])
+optim.pulse_generator = []
+for j in range(n_ctrls):
+    # Note that for CRAB each control must have its own pulse generator
+    # as the frequencies and coeffs values are stored in the pulsegen
+    pgen = pulsegen.PulseGenCrabFourier(dyn)
+    pgen.scaling = 0.1
+    # comment out the next line for no guess pulse 
+    pgen.guess_pulse = guess_pgen.gen_pulse()
+    optim.pulse_generator.append(pgen)
+    init_amps[:, j] = pgen.gen_pulse()
+dyn.initialize_controls(init_amps)
+
 # *************************************************************
 # File extension for output files
 
-f_ext = "{}_n_ts{}_ptype{}.txt".format(example_name, n_ts, p_type)
+f_ext = "{}_n_ts{}.txt".format(example_name, n_ts)
 
 # Run the optimisation
 print("\n***********************************")
 print("Starting pulse optimisation")
-result = cpo.optimize_pulse_unitary(H_d, H_c, U_0, U_targ, n_ts, evo_time, 
-                fid_err_targ=fid_err_targ, min_grad=min_grad, 
-                max_iter=max_iter, max_wall_time=max_wall_time, 
-                out_file_ext=f_ext, init_pulse_type=p_type, 
-                log_level=log_level, gen_stats=True)
+result = optim.run_optimization()
 
 print("\n***********************************")
 print("Optimising complete. Stats follow:")

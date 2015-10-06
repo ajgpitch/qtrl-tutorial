@@ -210,6 +210,7 @@ result.stats.report()
 print("Final evolution\n{}\n".format(result.evo_full_final))
 
 print("********* Summary *****************")
+print "Initial fidelity error {}".format(result.initial_fid_err)
 print("Final fidelity error {}".format(result.fid_err))
 print("Terminated due to {}".format(result.termination_reason))
 print("Number of iterations {}".format(result.num_iter))
