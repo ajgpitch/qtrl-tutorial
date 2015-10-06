@@ -77,13 +77,14 @@ dyn.coupling1 = 0.3
 dyn.coupling2 = 0.2
 dyn.sqz = 0.5
 dyn.rot = 1.0
-dyn.init_timeslots()      
-n_ts = dyn.num_tslots
 
 # load the dynamics parameters
 # note these will overide those above if present in the file
 print("Loading dynamics parameters from {}".format(cfg.param_fpath))
 loadparams.load_parameters(cfg.param_fpath, dynamics=dyn)
+
+dyn.init_timeslots()      
+n_ts = dyn.num_tslots
 
 # Create a pulse generator of the type specified
 p_gen = pulsegen.create_pulse_gen(pulse_type=cfg.pulse_type, dyn=dyn)
@@ -141,6 +142,8 @@ loadparams.load_parameters(cfg.param_fpath, optim=optim)
 #Drift
 g1 = 2*(dyn.coupling1 + dyn.coupling2)
 g2 = 2*(dyn.coupling1 - dyn.coupling2)
+#g1 = 1.0
+#g2 = 0.2
 A0 = np.array([[1, 0, g1, 0], 
                    [0, 1, 0, g2], 
                    [g1, 0, 1, 0], 
