@@ -96,7 +96,7 @@ result.stats.report()
 print("\nFinal evolution\n{}\n".format(result.evo_full_final))
 
 print("********* Summary *****************")
-print "Initial fidelity error {}".format(result.initial_fid_err)
+print("Initial fidelity error {}".format(result.initial_fid_err))
 print("Final fidelity error {}".format(result.fid_err))
 print("Final gradient normal {}".format(result.grad_norm_final))
 print("Terminated due to {}".format(result.termination_reason))
