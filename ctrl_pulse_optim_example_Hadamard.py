@@ -57,7 +57,7 @@ U_0 = identity(2**nSpins)
 U_targ = hadamard_transform(nSpins)
 # ***** Define time evolution parameters *****
 # Number of time slots
-n_ts = 10
+n_ts = 4
 # Time allowed for the evolution
 evo_time = 6
 

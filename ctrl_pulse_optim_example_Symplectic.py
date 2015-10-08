@@ -110,11 +110,10 @@ print("Loading termination condition parameters from {}".format(
         cfg.param_fpath))
 loadparams.load_parameters(cfg.param_fpath, term_conds=tc)
         
-
 # Create the optimiser object
 if cfg.optim_method == 'BFGS':
     optim = optimizer.OptimizerBFGS(cfg, dyn)
-elif cfg.optim_method == 'LBFGSB':
+elif cfg.optim_method == 'FMIN_L_BFGS_B':
     optim = optimizer.OptimizerLBFGSB(cfg, dyn)
 elif cfg.optim_method is None:
     raise errors.UsageError("Optimisation algorithm must be specified "
