@@ -56,15 +56,11 @@ nSpins = 1
 # Note that for now the dynamics must be specified as ndarrays
 # when using manual config
 # This is until GitHub issue #370 is resolved
-H_d = sigmaz().full()
-H_c = [sigmax().full()]
-# Number of ctrls
-n_ctrls = len(H_c)
+H_d = sigmaz()
+H_c = sigmax()
 
-U_0 = identity(2**nSpins).full()
-# Hadamard gate
-#U_targ = Qobj(np.array([[1,1],[1,-1]], dtype=complex)/np.sqrt(2))
-U_targ = hadamard_transform(nSpins).full()
+U_0 = identity(2**nSpins)
+U_targ = hadamard_transform(nSpins)
 
 # Evolution parameters
 # time-slicing
@@ -83,20 +79,41 @@ cfg = optimconfig.OptimConfig()
 cfg.param_fname = "Hadamard_params.ini"
 cfg.param_fpath = os.path.join(os.getcwd(), cfg.param_fname)
 cfg.log_level = log_level
+cfg.pulse_type = "ZERO"
+
+# load the config parameters
+# note these will overide those above if present in the file
+print("Loading config parameters from {}".format(cfg.param_fpath))
+loadparams.load_parameters(cfg.param_fpath, config=cfg)
+# Update the log level, as this may have been changed in the config
+logger.setLevel(cfg.log_level)
 
 # Create the dynamics object
 dyn = dynamics.DynamicsUnitary(cfg)
-dyn.num_tslots = n_ts
-dyn.evo_time = evo_time
-
 # Physical parameters
-dyn.target = U_targ
-dyn.initial = U_0
-dyn.drift_dyn_gen = H_d
-dyn.ctrl_dyn_gen = H_c
+dyn.target = U_targ.full()
+dyn.initial = U_0.full()
+dyn.drift_dyn_gen = H_d.full()
+dyn.ctrl_dyn_gen = list([H_c.full()])
+# load the dynamics parameters
+# note these will overide those above if present in the file
+print("Loading dynamics parameters from {}".format(cfg.param_fpath))
+loadparams.load_parameters(cfg.param_fpath, dynamics=dyn)
+dyn.init_timeslots()      
+n_ts = dyn.num_tslots
+n_ctrls = dyn.get_num_ctrls()
+
+# Create a pulse generator of the type specified
+pgen = pulsegen.create_pulse_gen(pulse_type=cfg.pulse_type, dyn=dyn)
+# load the pulse generator parameters
+# note these will overide those above if present in the file
+print("Loading pulsegen parameters from {}".format(cfg.param_fpath))
+loadparams.load_parameters(cfg.param_fpath, pulsegen=pgen)
 
 # Create the TerminationConditions instance
 tc = termcond.TerminationConditions()
+# load the termination condition parameters
+# note these will overide those above if present in the file
 print("Loading termination condition parameters from {}".format(
         cfg.param_fpath))
 loadparams.load_parameters(cfg.param_fpath, term_conds=tc)
@@ -118,25 +135,18 @@ dyn.stats = sts
 optim.stats = sts
 optim.config = cfg
 optim.dynamics = dyn
+optim.pulse_generator = pgen
 optim.termination_conditions = tc
 
-guess_pgen = pulsegen.create_pulse_gen('LIN', dyn)
 init_amps = np.zeros([n_ts, n_ctrls])
-optim.pulse_generator = []
+# Initialise the dynamics
+init_amps = np.zeros([n_ts, n_ctrls])
 for j in range(n_ctrls):
-    # Note that for CRAB each control must have its own pulse generator
-    # as the frequencies and coeffs values are stored in the pulsegen
-    pgen = pulsegen.PulseGenCrabFourier(dyn)
-    pgen.scaling = 0.1
-    # comment out the next line for no guess pulse 
-    pgen.guess_pulse = guess_pgen.gen_pulse()
-    optim.pulse_generator.append(pgen)
     init_amps[:, j] = pgen.gen_pulse()
 dyn.initialize_controls(init_amps)
 
 # *************************************************************
 # File extension for output files
-
 f_ext = "{}_n_ts{}.txt".format(example_name, n_ts)
 
 # Run the optimisation
