@@ -71,7 +71,7 @@ evo_time = 6.0
 print("\n***********************************")
 print("Creating and configuring control optimisation objects")
 
-example_name = 'Coupled_osc'
+example_name = 'Hadamard-load_params'
 log_level = logging.DEBUG
 
 # Create the OptimConfig object
@@ -129,6 +129,10 @@ elif cfg.optim_method is None:
 else:
     optim = optimizer.Optimizer(cfg, dyn)
     optim.method = cfg.optim_method
+# load the optimiser parameters
+# note these will overide those above if present in the file
+print("Loading optimiser parameters from {}".format(cfg.param_fpath))
+loadparams.load_parameters(cfg.param_fpath, optim=optim)
 
 sts = stats.Stats()
 dyn.stats = sts

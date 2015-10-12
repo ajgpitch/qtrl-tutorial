@@ -4,5 +4,7 @@
 
 # Python scripts that call the qutip.control library modules
 # Designed as material for a tutorial on using the qutip.control library for quantum optimal control simulations
+
+# All scripts assume that the latest github version of QuTiP is installed.
  
 
