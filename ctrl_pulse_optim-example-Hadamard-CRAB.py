@@ -39,7 +39,7 @@ import datetime
 #QuTiP
 from qutip import Qobj, identity, sigmax, sigmaz
 from qutip.qip import hadamard_transform
-import qutip.logging as logging
+import qutip.logging_utils as logging
 logger = logging.get_logger()
 #QuTiP control modules
 import qutip.control.pulseoptim as cpo
