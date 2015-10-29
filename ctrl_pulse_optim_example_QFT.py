@@ -68,13 +68,22 @@ Si = 0.5*identity(2)
 
 # Drift Hamiltonian
 H_d = 0.5*(tensor(Sx, Sx) + tensor(Sy, Sy) + tensor(Sz, Sz))
+print("drift {}".format(H_d))
 # The (four) control Hamiltonians
 H_c = [tensor(Sx, Si), tensor(Sy, Si), tensor(Si, Sx), tensor(Si, Sy)]
+j = 0
+for c in H_c:
+    j += 1
+    print("ctrl {} \n{}".format(j, c))
+    
 n_ctrls = len(H_c)
 # start point for the gate evolution
-U_0 = identity(4)
+U_0 = tensor(identity(2), identity(2))
+print("U_0 {}".format(U_0))
 # Target for the gate evolution - Quantum Fourier Transform gate
 U_targ = qft.qft(2)
+#U_targ.dims = U_0.dims
+print("target {}".format(U_targ))
 
 # ***** Define time evolution parameters *****
 # Number of time slots

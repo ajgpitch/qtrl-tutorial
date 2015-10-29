@@ -143,10 +143,11 @@ g1 = 2*(dyn.coupling1 + dyn.coupling2)
 g2 = 2*(dyn.coupling1 - dyn.coupling2)
 #g1 = 1.0
 #g2 = 0.2
-A0 = np.array([[1, 0, g1, 0], 
-                   [0, 1, 0, g2], 
-                   [g1, 0, 1, 0], 
-                   [0, g2, 0, 1]])
+A0 = np.array([
+                    [1, 0, g1, 0], 
+                    [0, 1, 0, g2], 
+                    [g1, 0, 1, 0], 
+                    [0, g2, 0, 1]])
 dyn.drift_dyn_gen = A0
 
 #Rotate control

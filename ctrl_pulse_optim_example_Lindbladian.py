@@ -76,7 +76,7 @@ ctrls = [LC_z, LC_x]
 # Number of ctrls
 n_ctrls = len(ctrls)
 
-initial = identity(4)
+initial = tensor(Si, Si)
 #Target
 #Hadamard gate
 had_gate = hadamard_transform(1)
