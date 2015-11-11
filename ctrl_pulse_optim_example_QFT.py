@@ -42,6 +42,7 @@ See Machnes et.al., arXiv.1011.4874
 import numpy as np
 import numpy.matlib as mat
 from numpy.matlib import kron
+from scipy.sparse import csr_matrix
 import matplotlib.pyplot as plt
 import datetime
 from scipy.optimize import check_grad
@@ -119,13 +120,15 @@ optim = cpo.create_pulse_optimizer(H_d, list(H_c), U_0, U_targ, n_ts, evo_time,
                 fid_err_targ=fid_err_targ, min_grad=min_grad, 
                 max_iter=max_iter, max_wall_time=max_wall_time, 
 #                optim_method='LBFGSB', 
-                method_params={'max_metric_corr':40, 'accuracy_factor':1e7,
-                                'ftol':1e-7},
+                method_params={'max_metric_corr':40, 'accuracy_factor':1e-7,
+                                'ftol':1e-15},
                 optim_method='fmin_l_bfgs_b',
 #                optim_method='l-bfgs-b',
                 dyn_type='UNIT', 
-                prop_type='DIAG', 
-                fid_type='UNIT', fid_params={'phase_option':'PSU'}, 
+#                dyn_params={'oper_dtype':Qobj},
+#                prop_type='APPROX', 
+#                fid_type='TDAPPROX', 
+                fid_params={'phase_option':'PSU'}, 
                 init_pulse_type=p_type, pulse_scaling=1.0,
                 log_level=log_level, gen_stats=True)
 
