@@ -82,9 +82,11 @@ n_ctrls = len(H_c)
 U_0 = tensor(identity(2), identity(2))
 print("U_0 {}".format(U_0))
 # Target for the gate evolution - Quantum Fourier Transform gate
-U_targ = qft.qft(2)
+U_targ = (qft.qft(2)).tidyup()
 #U_targ.dims = U_0.dims
 print("target {}".format(U_targ))
+
+print("Check unitary (should be I) {}".format(U_targ.dag()*U_targ))
 
 # ***** Define time evolution parameters *****
 # Number of time slots
@@ -120,7 +122,7 @@ optim = cpo.create_pulse_optimizer(H_d, list(H_c), U_0, U_targ, n_ts, evo_time,
                 fid_err_targ=fid_err_targ, min_grad=min_grad, 
                 max_iter=max_iter, max_wall_time=max_wall_time, 
 #                optim_method='LBFGSB', 
-                method_params={'max_metric_corr':40, 'accuracy_factor':1e-7,
+                method_params={'max_metric_corr':10, 'accuracy_factor':1e-3,
                                 'ftol':1e-15},
                 optim_method='fmin_l_bfgs_b',
 #                optim_method='l-bfgs-b',
@@ -160,6 +162,7 @@ elif (isinstance(p_gen, pulsegen.PulseGenLinear)):
         init_amps[:, j] = p_gen.gen_pulse()
 elif (isinstance(p_gen, pulsegen.PulseGenZero)):
     for j in range(n_ctrls):
+        #p_gen.offset = -0.5
         p_gen.offset = sf = float(j) - float(n_ctrls - 1)/2
         init_amps[:, j] = p_gen.gen_pulse()
 else:
@@ -169,6 +172,10 @@ else:
         init_amps[:, j] = p_gen.gen_pulse()
 
 dyn.initialize_controls(init_amps)
+
+print("dimensional norm: {}".format(dyn.fid_computer.dimensional_norm))
+print("Initial infidelity: {}".format(dyn.fid_computer.get_fid_err()))
+#print("onto_evo_target: {}".format(dyn.onto_evo_target))
 
 # Save initial amplitudes to a text file
 pulsefile = "ctrl_amps_initial_" + f_ext
