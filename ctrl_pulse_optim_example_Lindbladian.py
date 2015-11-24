@@ -27,6 +27,7 @@ The initial and final pulses are displayed in a plot
 import numpy as np
 import numpy.matlib as mat
 from numpy.matlib import kron
+from scipy.sparse import csr_matrix
 import matplotlib.pyplot as plt
 import datetime
 
@@ -76,7 +77,7 @@ ctrls = [LC_z, LC_x]
 # Number of ctrls
 n_ctrls = len(ctrls)
 
-initial = identity(4)
+initial = tensor(Si, Si)
 #Target
 #Hadamard gate
 had_gate = hadamard_transform(1)
@@ -126,6 +127,9 @@ result = cpo.optimize_pulse(drift, ctrls, initial, target_DP, n_ts, evo_time,
                 fid_err_targ=fid_err_targ, min_grad=min_grad, 
                 max_iter=max_iter, max_wall_time=max_wall_time, 
                 amp_lbound=-10.0, amp_ubound=10.0,
+#                dyn_params={'oper_dtype':Qobj},
+#                prop_type='AUG_MAT', 
+#                fid_type='UNIT',
                 out_file_ext=f_ext, init_pulse_type=p_type, 
                 log_level=log_level, gen_stats=True)
 

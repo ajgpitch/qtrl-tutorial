@@ -38,6 +38,8 @@ logger = logging.get_logger()
 import qutip.control.symplectic as sympl
 import qutip.control.optimconfig as optimconfig
 import qutip.control.dynamics as dynamics
+import qutip.control.propcomp as propcomp
+import qutip.control.fidcomp as fidcomp
 import qutip.control.termcond as termcond
 import qutip.control.optimizer as optimizer
 import qutip.control.stats as stats
@@ -69,6 +71,11 @@ logger.setLevel(cfg.log_level)
 
 # Create the dynamics object
 dyn = dynamics.DynamicsSymplectic(cfg)
+#dyn.prop_computer = propcomp.PropCompApproxGrad(dyn)
+#dyn.fid_computer = fidcomp.FidCompTraceDiffApprox(dyn)
+#dyn.fid_computer.epsilon = 0.1
+#dyn.oper_dtype = Qobj
+        
 dyn.num_tslots = 200
 dyn.evo_time = 10.0
 
@@ -143,32 +150,33 @@ g1 = 2*(dyn.coupling1 + dyn.coupling2)
 g2 = 2*(dyn.coupling1 - dyn.coupling2)
 #g1 = 1.0
 #g2 = 0.2
-A0 = np.array([[1, 0, g1, 0], 
-                   [0, 1, 0, g2], 
-                   [g1, 0, 1, 0], 
-                   [0, g2, 0, 1]])
+A0 = Qobj(np.array([
+                    [1, 0, g1, 0], 
+                    [0, 1, 0, g2], 
+                    [g1, 0, 1, 0], 
+                    [0, g2, 0, 1]]))
 dyn.drift_dyn_gen = A0
 
 #Rotate control
-A_rot = dyn.rot*np.array([
+A_rot = Qobj(dyn.rot*np.array([
                     [1, 0, 0, 0],
                     [0, 1, 0, 0],
                     [0, 0, 0, 0],
                     [0, 0, 0, 0]
-                    ])
+                    ]))
 
 
 #Squeeze Control
-A_sqz = dyn.sqz*np.array([
+A_sqz = Qobj(dyn.sqz*np.array([
                     [1, 0, 0, 0],
                     [0, -1, 0, 0],
                     [0, 0, 0, 0],
                     [0, 0, 0, 0]
-                    ])
+                    ]))
 dyn.ctrl_dyn_gen = [A_rot, A_sqz]  
 n_ctrls = dyn.get_num_ctrls()
 
-dyn.initial = identity(4).full()
+dyn.initial = identity(4)
 
 # Target
 A_targ = Qobj(np.array([
@@ -182,7 +190,7 @@ Omg = Qobj(sympl.calc_omega(2))
 print("Omega:\n{}\n".format(Omg))
 
 S_targ = (-A_targ*Omg*np.pi/2.0).expm()
-dyn.target = S_targ.full()
+dyn.target = S_targ
 #S_targ = (Omg*A_targ*np.pi/2.0).expm()
 print("Target S:\n{}\n".format(S_targ))
 

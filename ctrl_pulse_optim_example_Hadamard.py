@@ -39,7 +39,7 @@ logger = logging.get_logger()
 import qutip.control.pulseoptim as cpo
 
 example_name = 'Hadamard'
-log_level = logging.INFO
+log_level = logging.DEBUG
 
 # ****************************************************************
 # Define the physics of the problem
@@ -87,6 +87,9 @@ print("Starting pulse optimisation")
 result = cpo.optimize_pulse_unitary(H_d, H_c, U_0, U_targ, n_ts, evo_time, 
                 fid_err_targ=fid_err_targ, min_grad=min_grad, 
                 max_iter=max_iter, max_wall_time=max_wall_time, 
+#                dyn_params={'oper_dtype':Qobj},
+                #phase_option='SU',
+                fid_params={'phase_option':'PSU'},
                 out_file_ext=f_ext, init_pulse_type=p_type, 
                 log_level=log_level, gen_stats=True)
 

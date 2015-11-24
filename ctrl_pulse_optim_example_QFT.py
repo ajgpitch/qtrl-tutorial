@@ -42,6 +42,7 @@ See Machnes et.al., arXiv.1011.4874
 import numpy as np
 import numpy.matlib as mat
 from numpy.matlib import kron
+from scipy.sparse import csr_matrix
 import matplotlib.pyplot as plt
 import datetime
 from scipy.optimize import check_grad
@@ -68,13 +69,24 @@ Si = 0.5*identity(2)
 
 # Drift Hamiltonian
 H_d = 0.5*(tensor(Sx, Sx) + tensor(Sy, Sy) + tensor(Sz, Sz))
+print("drift {}".format(H_d))
 # The (four) control Hamiltonians
 H_c = [tensor(Sx, Si), tensor(Sy, Si), tensor(Si, Sx), tensor(Si, Sy)]
+j = 0
+for c in H_c:
+    j += 1
+    print("ctrl {} \n{}".format(j, c))
+    
 n_ctrls = len(H_c)
 # start point for the gate evolution
-U_0 = identity(4)
+U_0 = tensor(identity(2), identity(2))
+print("U_0 {}".format(U_0))
 # Target for the gate evolution - Quantum Fourier Transform gate
-U_targ = qft.qft(2)
+U_targ = (qft.qft(2)).tidyup()
+#U_targ.dims = U_0.dims
+print("target {}".format(U_targ))
+
+print("Check unitary (should be I) {}".format(U_targ.dag()*U_targ))
 
 # ***** Define time evolution parameters *****
 # Number of time slots
@@ -110,13 +122,15 @@ optim = cpo.create_pulse_optimizer(H_d, list(H_c), U_0, U_targ, n_ts, evo_time,
                 fid_err_targ=fid_err_targ, min_grad=min_grad, 
                 max_iter=max_iter, max_wall_time=max_wall_time, 
 #                optim_method='LBFGSB', 
-                method_params={'max_metric_corr':40, 'accuracy_factor':1e7,
-                                'ftol':1e-7},
+                method_params={'max_metric_corr':10, 'accuracy_factor':1e-3,
+                                'ftol':1e-15},
                 optim_method='fmin_l_bfgs_b',
 #                optim_method='l-bfgs-b',
                 dyn_type='UNIT', 
-                prop_type='DIAG', 
-                fid_type='UNIT', fid_params={'phase_option':'PSU'}, 
+#                dyn_params={'oper_dtype':Qobj},
+#                prop_type='APPROX', 
+#                fid_type='TDAPPROX', 
+                fid_params={'phase_option':'PSU'}, 
                 init_pulse_type=p_type, pulse_scaling=1.0,
                 log_level=log_level, gen_stats=True)
 
@@ -148,6 +162,7 @@ elif (isinstance(p_gen, pulsegen.PulseGenLinear)):
         init_amps[:, j] = p_gen.gen_pulse()
 elif (isinstance(p_gen, pulsegen.PulseGenZero)):
     for j in range(n_ctrls):
+        #p_gen.offset = -0.5
         p_gen.offset = sf = float(j) - float(n_ctrls - 1)/2
         init_amps[:, j] = p_gen.gen_pulse()
 else:
@@ -157,6 +172,10 @@ else:
         init_amps[:, j] = p_gen.gen_pulse()
 
 dyn.initialize_controls(init_amps)
+
+print("dimensional norm: {}".format(dyn.fid_computer.dimensional_norm))
+print("Initial infidelity: {}".format(dyn.fid_computer.get_fid_err()))
+#print("onto_evo_target: {}".format(dyn.onto_evo_target))
 
 # Save initial amplitudes to a text file
 pulsefile = "ctrl_amps_initial_" + f_ext
