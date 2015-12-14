@@ -38,6 +38,8 @@ import qutip.logging_utils as logging
 logger = logging.get_logger()
 #QuTiP control modules
 import qutip.control.pulseoptim as cpo
+#local import
+import plot_util
 
 example_name = 'Lindblad'
 log_level = logging.INFO
@@ -158,9 +160,6 @@ print("***********************************")
 print("Starting pulse optimisation")
 result = optim.run_optimization()
 
-
-
-
 print("***********************************")
 print("\nOptimising complete. Stats follow:")
 result.stats.report()
@@ -179,19 +178,17 @@ print("***********************************")
 # Plot the initial and final amplitudes
 fig1 = plt.figure()
 ax1 = fig1.add_subplot(2, 1, 1)
-ax1.set_title("Initial ctrl amps")
+ax1.set_title("Initial control amps")
 ax1.set_xlabel("Time")
 ax1.set_ylabel("Control amplitude")
-t = result.time[:n_ts]
 for j in range(n_ctrls):
-    amps = result.initial_amps[:, j]
-    ax1.plot(t, amps)
+    plot_util.plot_pulse(result.time, result.initial_amps[:, j], ax=ax1)
+
 ax2 = fig1.add_subplot(2, 1, 2)
 ax2.set_title("Optimised Control Sequences")
 ax2.set_xlabel("Time")
 ax2.set_ylabel("Control amplitude")
 for j in range(n_ctrls):
-    amps = result.final_amps[:, j]
-    ax2.plot(t, amps)
+    plot_util.plot_pulse(result.time, result.final_amps[:, j], ax=ax2)
 
 plt.show()

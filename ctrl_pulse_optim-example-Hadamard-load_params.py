@@ -44,6 +44,8 @@ import qutip.control.stats as stats
 import qutip.control.pulsegen as pulsegen
 import qutip.control.errors as errors
 import qutip.control.loadparams as loadparams
+#local import
+import plot_util
 
 example_name = 'Hadamard-load_params'
 log_level = logging.INFO
@@ -91,10 +93,10 @@ logger.setLevel(cfg.log_level)
 # Create the dynamics object
 dyn = dynamics.DynamicsUnitary(cfg)
 # Physical parameters
-dyn.target = U_targ.full()
-dyn.initial = U_0.full()
-dyn.drift_dyn_gen = H_d.full()
-dyn.ctrl_dyn_gen = list([H_c.full()])
+dyn.target = U_targ
+dyn.initial = U_0
+dyn.drift_dyn_gen = H_d
+dyn.ctrl_dyn_gen = list([H_c])
 # load the dynamics parameters
 # note these will overide those above if present in the file
 print("Loading dynamics parameters from {}".format(cfg.param_fpath))
@@ -173,22 +175,21 @@ print("Number of iterations {}".format(result.num_iter))
 print("Completed in {} HH:MM:SS.US".\
         format(datetime.timedelta(seconds=result.wall_time)))
 print("***********************************")
+
 # Plot the initial and final amplitudes
 fig1 = plt.figure()
 ax1 = fig1.add_subplot(2, 1, 1)
 ax1.set_title("Initial control amps")
 ax1.set_xlabel("Time")
 ax1.set_ylabel("Control amplitude")
-t = result.time[:n_ts]
 for j in range(n_ctrls):
-    amps = result.initial_amps[:, j]
-    ax1.plot(t, amps)
+    plot_util.plot_pulse(result.time, result.initial_amps[:, j], ax=ax1)
+
 ax2 = fig1.add_subplot(2, 1, 2)
 ax2.set_title("Optimised Control Sequences")
 ax2.set_xlabel("Time")
 ax2.set_ylabel("Control amplitude")
 for j in range(n_ctrls):
-    amps = result.final_amps[:, j]
-    ax2.plot(t, amps)
+    plot_util.plot_pulse(result.time, result.final_amps[:, j], ax=ax2)
 
 plt.show()

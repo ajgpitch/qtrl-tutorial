@@ -37,14 +37,16 @@ logger = logging.get_logger()
 import qutip.control.pulseoptim as cpo
 import qutip.control.fidcomp as fidcomp
 import qutip.control.errors as errors
+#local import
+import plot_util
 
 example_name = 'Lindblad-cust_fid'
 log_level = logging.INFO
 
-class FidCompCustom(fidcomp.FidelityComputer):
+class FidCompCustom(fidcomp.FidCompTraceDiff):
 
     """
-    Customised fidelity computer copied the TraceDiff fidelity computer
+    Customised fidelity computer subclassed from the TraceDiff fidelity computer
     At this stage it does nothing different other than print a DEBUG message
     to say that it is 'custom'
     Note: It is recommended to put this class in a separate file in a real
@@ -70,28 +72,6 @@ class FidCompCustom(fidcomp.FidelityComputer):
         is the dimension of the drift, when the Dynamics are initialised.
     """
 
-    def reset(self):
-        fidcomp.FidelityComputer.reset(self)
-        self.id_text = 'TRACEDIFF'
-        self.scale_factor = None
-        self.uses_evo_t2end = True
-        if not self.parent.prop_computer.grad_exact:
-            raise errors.UsageError(
-                "This FidelityComputer can only be"
-                " used with an exact gradient PropagatorComputer.")
-        self.apply_params()
-        
-    def init_comp(self):
-        """
-        initialises the computer based on the configuration of the Dynamics
-        Calculates the scale_factor is not already set
-        """
-        if self.scale_factor is None:
-            self.scale_factor = 1.0 / (2.0*self.parent.get_drift_dim())
-            if self.log_level <= logging.DEBUG:
-                logger.debug("Scale factor calculated as {}".format(
-                    self.scale_factor))
-
     def get_fid_err(self):
         """
         Gets the absolute error in the fidelity
@@ -102,20 +82,24 @@ class FidCompCustom(fidcomp.FidelityComputer):
             n_ts = dyn.num_tslots
             if self.log_level <= logging.DEBUG:
                 logger.debug("**** Computing custom fidelity ****")
-            evo_final = dyn.evo_init2t[n_ts]
-            evo_f_diff = dyn.target - evo_final
+            evo_final = dyn._fwd_evo[n_ts]
+            evo_f_diff = dyn._target - evo_final
             if self.log_level <= logging.DEBUG_VERBOSE:
                 logger.log(logging.DEBUG_VERBOSE, "Calculating TraceDiff "
                            "fidelity...\n Target:\n{}\n Evo final:\n{}\n"
-                           "Evo final diff:\n{}".format(dyn.target, evo_final,
+                           "Evo final diff:\n{}".format(dyn._target, evo_final,
                                                         evo_f_diff))
 
             # **** CUSTOMISE this line below *****
             # Calculate the fidelity error using the trace difference norm
             # Note that the value should have not imagnary part, so using
             # np.real, just avoids the complex casting warning
-            self.fid_err = self.scale_factor*np.real(
-                np.trace(evo_f_diff.conj().T.dot(evo_f_diff)))
+            if dyn.oper_dtype == Qobj:
+                self.fid_err = self.scale_factor*np.real(
+                        (evo_f_diff.dag()*evo_f_diff).tr())
+            else:
+                self.fid_err = self.scale_factor*np.real(np.trace(
+                        evo_f_diff.conj().T.dot(evo_f_diff)))
 
             if np.isnan(self.fid_err):
                 self.fid_err = np.Inf
@@ -128,33 +112,7 @@ class FidCompCustom(fidcomp.FidelityComputer):
                 logger.debug("Fidelity error: {}".format(self.fid_err))
 
         return self.fid_err
-
-    def get_fid_err_gradient(self):
-        """
-        Returns the normalised gradient of the fidelity error
-        in a (nTimeslots x n_ctrls) array
-        The gradients are cached in case they are requested
-        mutliple times between control updates
-        (although this is not typically found to happen)
-        """
-        if not self.fid_err_grad_current:
-            dyn = self.parent
-            self.fid_err_grad = self.compute_fid_err_grad()
-            self.fid_err_grad_current = True
-            if dyn.stats is not None:
-                dyn.stats.num_grad_computes += 1
-
-            self.grad_norm = np.sqrt(np.sum(self.fid_err_grad**2))
-            if self.log_level <= logging.DEBUG_INTENSE:
-                logger.log(logging.DEBUG_INTENSE, "fidelity error gradients:\n"
-                           "{}".format(self.fid_err_grad))
-
-            if self.log_level <= logging.DEBUG:
-                logger.debug("Gradient norm: "
-                             "{} ".format(self.grad_norm))
-
-        return self.fid_err_grad
-
+           
     def compute_fid_err_grad(self):
         """
         Calculate exact gradient of the fidelity error function
@@ -163,7 +121,7 @@ class FidCompCustom(fidcomp.FidelityComputer):
         These are returned as a (nTimeslots x n_ctrls) array
         """
         dyn = self.parent
-        n_ctrls = dyn.get_num_ctrls()
+        n_ctrls = dyn.num_ctrls
         n_ts = dyn.num_tslots
         if self.log_level <= logging.DEBUG:
             logger.debug("**** Computing custom fidelity gradient ****")
@@ -176,20 +134,27 @@ class FidCompCustom(fidcomp.FidelityComputer):
 
         # loop through all ctrl timeslots calculating gradients
         time_st = timeit.default_timer()
-        evo_final = dyn.evo_init2t[n_ts]
-        evo_f_diff = dyn.target - evo_final
 
+
+        evo_final = dyn._fwd_evo[n_ts]
+        evo_f_diff = dyn._target - evo_final
         for j in range(n_ctrls):
             for k in range(n_ts):
-                fwd_evo = dyn.evo_init2t[k]
-                evo_grad = dyn.prop_grad[k, j].dot(fwd_evo)
-
-                if k+1 < n_ts:
-                    owd_evo = dyn.evo_t2end[k+1]
-                    evo_grad = owd_evo.dot(evo_grad)
-                # **** CUSTOMISE this line below *****
-                g = -2*self.scale_factor*np.real(
-                    np.trace(evo_f_diff.conj().T.dot(evo_grad)))
+                fwd_evo = dyn._fwd_evo[k]
+                if dyn.oper_dtype == Qobj:
+                    evo_grad = dyn._prop_grad[k, j]*fwd_evo
+                    if k+1 < n_ts:
+                        evo_grad = dyn._onwd_evo[k+1]*evo_grad
+                    # **** CUSTOMISE this line below *****
+                    g = -2*self.scale_factor*np.real(
+                                    (evo_f_diff.dag()*evo_grad).tr())
+                else:
+                    evo_grad = dyn._prop_grad[k, j].dot(fwd_evo)
+                    if k+1 < n_ts:
+                        evo_grad = dyn._onwd_evo[k+1].dot(evo_grad)
+                    # **** CUSTOMISE this line below *****
+                    g = -2*self.scale_factor*np.real(np.trace(
+                                    evo_f_diff.conj().T.dot(evo_grad)))
                 if np.isnan(g):
                     g = np.Inf
 
@@ -242,7 +207,7 @@ target_DP = tensor(had_gate, had_gate)
 
 # ***** Define time evolution parameters *****
 # Number of time slots
-n_ts = 200
+n_ts = 20
 # Time allowed for the evolution
 evo_time = 2
 
@@ -327,19 +292,17 @@ print("***********************************")
 # Plot the initial and final amplitudes
 fig1 = plt.figure()
 ax1 = fig1.add_subplot(2, 1, 1)
-ax1.set_title("Initial ctrl amps")
+ax1.set_title("Initial control amps")
 ax1.set_xlabel("Time")
 ax1.set_ylabel("Control amplitude")
-t = result.time[:n_ts]
 for j in range(n_ctrls):
-    amps = result.initial_amps[:, j]
-    ax1.plot(t, amps)
+    plot_util.plot_pulse(result.time, result.initial_amps[:, j], ax=ax1)
+
 ax2 = fig1.add_subplot(2, 1, 2)
 ax2.set_title("Optimised Control Sequences")
 ax2.set_xlabel("Time")
 ax2.set_ylabel("Control amplitude")
 for j in range(n_ctrls):
-    amps = result.final_amps[:, j]
-    ax2.plot(t, amps)
+    plot_util.plot_pulse(result.time, result.final_amps[:, j], ax=ax2)
 
 plt.show()

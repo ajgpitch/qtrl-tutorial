@@ -44,6 +44,9 @@ import qutip.control.stats as stats
 import qutip.control.errors as errors
 import qutip.control.pulsegen as pulsegen
 
+#local import
+import plot_util
+
 example_name = 'Hadamard-CRAB-man_cfg'
 log_level = logging.INFO
 
@@ -55,15 +58,15 @@ nSpins = 1
 # Note that for now the dynamics must be specified as ndarrays
 # when using manual config
 # This is until GitHub issue #370 is resolved
-H_d = sigmaz().full()
-H_c = [sigmax().full()]
+H_d = sigmaz()
+H_c = [sigmax()]
 # Number of ctrls
 n_ctrls = len(H_c)
 
-U_0 = identity(2**nSpins).full()
+U_0 = identity(2**nSpins)
 # Hadamard gate
 #U_targ = Qobj(np.array([[1,1],[1,-1]], dtype=complex)/np.sqrt(2))
-U_targ = hadamard_transform(nSpins).full()
+U_targ = hadamard_transform(nSpins)
 
 # Evolution parameters
 # time-slicing
@@ -147,22 +150,21 @@ print("Number of iterations {}".format(result.num_iter))
 print("Completed in {} HH:MM:SS.US".\
         format(datetime.timedelta(seconds=result.wall_time)))
 print("***********************************")
+
 # Plot the initial and final amplitudes
 fig1 = plt.figure()
 ax1 = fig1.add_subplot(2, 1, 1)
 ax1.set_title("Initial control amps")
 ax1.set_xlabel("Time")
 ax1.set_ylabel("Control amplitude")
-t = result.time[:n_ts]
 for j in range(n_ctrls):
-    amps = result.initial_amps[:, j]
-    ax1.plot(t, amps)
+    plot_util.plot_pulse(result.time, result.initial_amps[:, j], ax=ax1)
+
 ax2 = fig1.add_subplot(2, 1, 2)
 ax2.set_title("Optimised Control Sequences")
 ax2.set_xlabel("Time")
 ax2.set_ylabel("Control amplitude")
 for j in range(n_ctrls):
-    amps = result.final_amps[:, j]
-    ax2.plot(t, amps)
+    plot_util.plot_pulse(result.time, result.final_amps[:, j], ax=ax2)
 
 plt.show()

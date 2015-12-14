@@ -53,6 +53,8 @@ logger = logging.get_logger()
 import qutip.control.pulseoptim as cpo
 import qutip.control.pulsegen as pulsegen
 from qutip.qip.algorithms import qft
+#local import
+import plot_util
 
 example_name = 'QFT'
 log_level=logging.INFO
@@ -205,10 +207,9 @@ for i in range(n_evo_times):
     ax1.get_xaxis().set_visible(False)
     if i == 0:
         ax1.set_ylabel("Control amplitude")
-    t = results[i].time[:-1]
     for j in range(n_ctrls):
-        amps = results[i].initial_amps[:, j]
-        ax1.plot(t, amps)
+        plot_util.plot_pulse(results[i].time, 
+                             results[i].initial_amps[:, j], ax=ax1)
         
     ax2 = fig1.add_subplot(2, n_evo_times, i+n_evo_times+1)
     ax2.set_title("Final amps T={}".format(evo_times[i]))
@@ -217,9 +218,7 @@ for i in range(n_evo_times):
     if i == 0:
         ax2.set_ylabel("Control amplitude")
     for j in range(n_ctrls):
-        amps = results[i].final_amps[:, j]
-        ax2.plot(t, amps)
+        plot_util.plot_pulse(results[i].time, 
+                             results[i].final_amps[:, j], ax=ax2)
 
 plt.show()
-
-

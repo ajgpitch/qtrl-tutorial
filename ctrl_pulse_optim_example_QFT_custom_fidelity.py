@@ -53,6 +53,8 @@ import qutip.control.pulseoptim as cpo
 import qutip.control.pulsegen as pulsegen
 import qutip.control.fidcomp as fidcomp
 from qutip.qip.algorithms import qft
+#local import
+import plot_util
 
 example_name = 'QFT'
 log_level=logging.DEBUG
@@ -98,14 +100,18 @@ class FidCompCustom(fidcomp.FidCompUnitary):
         Note the gradient function uses this value
         The value is cached, because it is used in the gradient calculation
         """
+        
         if not self.fidelity_prenorm_current:
             dyn = self.parent
             if self.log_level <= logging.DEBUG:
                 logger.debug("**** Computing custom fidelity ****")
-            k = dyn.tslot_computer.get_timeslot_for_fidelity_calc()
+            k = dyn.tslot_computer._get_timeslot_for_fidelity_calc()
             dyn.compute_evolution()
-            # **** CUSTOMISE this line below *****
-            f = np.trace(dyn.evo_init2t[k].dot(dyn.evo_t2targ[k]))
+            # **** CUSTOMISE these lines below *****
+            if dyn.oper_dtype == Qobj:
+                f = (dyn._onto_evo[k]*dyn._fwd_evo[k]).tr()
+            else:
+                f = np.trace(dyn._onto_evo[k].dot(dyn._fwd_evo[k]))
             self.fidelity_prenorm = f
             self.fidelity_prenorm_current = True
             if dyn.stats is not None:
@@ -125,6 +131,7 @@ class FidCompCustom(fidcomp.FidCompUnitary):
         mutliple times between control updates
         (although this is not typically found to happen)
         """
+        
         if not self.fid_err_grad_current:
             dyn = self.parent
             grad_prenorm = self.compute_fid_grad()
@@ -161,12 +168,12 @@ class FidCompCustom(fidcomp.FidCompUnitary):
         These are returned as a (nTimeslots x n_ctrls) array
         """
         dyn = self.parent
-        n_ctrls = dyn.get_num_ctrls()
+        n_ctrls = dyn.num_ctrls
         n_ts = dyn.num_tslots
-        
+
         if self.log_level <= logging.DEBUG:
             logger.debug("**** Computing custom fidelity gradient ****")
-
+            
         # create n_ts x n_ctrls zero array for grad start point
         grad = np.zeros([n_ts, n_ctrls], dtype=complex)
 
@@ -177,10 +184,14 @@ class FidCompCustom(fidcomp.FidCompUnitary):
         time_st = timeit.default_timer()
         for j in range(n_ctrls):
             for k in range(n_ts):
-                owd_evo = dyn.evo_t2targ[k+1]
-                fwd_evo = dyn.evo_init2t[k]
-                # **** CUSTOMISE this line below *****
-                g = np.trace(owd_evo.dot(dyn.prop_grad[k, j]).dot(fwd_evo))
+                # **** CUSTOMISE these lines below *****
+                fwd_evo = dyn._fwd_evo[k]   
+                onto_evo = dyn._onto_evo[k+1]
+                if dyn.oper_dtype == Qobj:
+                    g = (onto_evo*dyn._prop_grad[k, j]*fwd_evo).tr()
+                else:
+                    g = np.trace(onto_evo.dot(
+                                dyn._prop_grad[k, j]).dot(fwd_evo))
                 grad[k, j] = g
         if dyn.stats is not None:
             dyn.stats.wall_time_gradient_compute += \
@@ -309,20 +320,18 @@ print("***********************************")
 # Plot the initial and final amplitudes
 fig1 = plt.figure()
 ax1 = fig1.add_subplot(2, 1, 1)
-ax1.set_title("Initial ctrl amps")
+ax1.set_title("Initial control amps")
 ax1.set_xlabel("Time")
 ax1.set_ylabel("Control amplitude")
-t = result.time[:n_ts]
 for j in range(n_ctrls):
-    amps = result.initial_amps[:, j]
-    ax1.plot(t, amps)
+    plot_util.plot_pulse(result.time, result.initial_amps[:, j], ax=ax1)
+
 ax2 = fig1.add_subplot(2, 1, 2)
 ax2.set_title("Optimised Control Sequences")
 ax2.set_xlabel("Time")
 ax2.set_ylabel("Control amplitude")
 for j in range(n_ctrls):
-    amps = result.final_amps[:, j]
-    ax2.plot(t, amps)
+    plot_util.plot_pulse(result.time, result.final_amps[:, j], ax=ax2)
 
 plt.show()
 
