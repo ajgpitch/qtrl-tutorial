@@ -47,14 +47,13 @@ import datetime
 
 #QuTiP
 from qutip import Qobj, identity, sigmax, sigmay, sigmaz, tensor
+from qutip.matplotlib_utilities import plot_ctrl_pulse
 import qutip.logging_utils as logging
 logger = logging.get_logger()
 #QuTiP control modules
 import qutip.control.pulseoptim as cpo
 import qutip.control.pulsegen as pulsegen
 from qutip.qip.algorithms import qft
-#local import
-import plot_util
 
 example_name = 'QFT'
 log_level=logging.INFO
@@ -208,7 +207,7 @@ for i in range(n_evo_times):
     if i == 0:
         ax1.set_ylabel("Control amplitude")
     for j in range(n_ctrls):
-        plot_util.plot_pulse(results[i].time, 
+        plot_ctrl_pulse(results[i].time, 
                              results[i].initial_amps[:, j], ax=ax1)
         
     ax2 = fig1.add_subplot(2, n_evo_times, i+n_evo_times+1)
@@ -218,7 +217,7 @@ for i in range(n_evo_times):
     if i == 0:
         ax2.set_ylabel("Control amplitude")
     for j in range(n_ctrls):
-        plot_util.plot_pulse(results[i].time, 
+        plot_ctrl_pulse(results[i].time, 
                              results[i].final_amps[:, j], ax=ax2)
 
 plt.show()

@@ -51,15 +51,13 @@ from numpy.testing import (
 
 #QuTiP
 from qutip import Qobj, identity, sigmax, sigmay, sigmaz, tensor
+from qutip.matplotlib_utilities import plot_ctrl_pulse
 import qutip.logging_utils as logging
 logger = logging.get_logger()
 #QuTiP control modules
 import qutip.control.pulseoptim as cpo
 import qutip.control.pulsegen as pulsegen
 from qutip.qip.algorithms import qft
-
-#local import
-import plot_util
 
 example_name = 'QFT'
 log_level=logging.INFO
@@ -228,14 +226,14 @@ ax1.set_title("Initial control amps")
 ax1.set_xlabel("Time")
 ax1.set_ylabel("Control amplitude")
 for j in range(n_ctrls):
-    plot_util.plot_pulse(result.time, result.initial_amps[:, j], ax=ax1)
+    plot_ctrl_pulse(result.time, result.initial_amps[:, j], ax=ax1)
 
 ax2 = fig1.add_subplot(2, 1, 2)
 ax2.set_title("Optimised Control Sequences")
 ax2.set_xlabel("Time")
 ax2.set_ylabel("Control amplitude")
 for j in range(n_ctrls):
-    plot_util.plot_pulse(result.time, result.final_amps[:, j], ax=ax2)
+    plot_ctrl_pulse(result.time, result.final_amps[:, j], ax=ax2)
 
 plt.show()
 
