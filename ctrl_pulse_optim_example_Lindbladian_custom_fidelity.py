@@ -37,8 +37,6 @@ logger = logging.get_logger()
 import qutip.control.pulseoptim as cpo
 import qutip.control.fidcomp as fidcomp
 import qutip.control.errors as errors
-#local import
-import plot_util
 
 example_name = 'Lindblad-cust_fid'
 log_level = logging.INFO
@@ -296,13 +294,16 @@ ax1.set_title("Initial control amps")
 ax1.set_xlabel("Time")
 ax1.set_ylabel("Control amplitude")
 for j in range(n_ctrls):
-    plot_util.plot_pulse(result.time, result.initial_amps[:, j], ax=ax1)
-
+    ax1.step(result.time, 
+             np.hstack((result.initial_amps[:, j], result.initial_amps[-1, j])), 
+             where='post')
+             
 ax2 = fig1.add_subplot(2, 1, 2)
 ax2.set_title("Optimised Control Sequences")
 ax2.set_xlabel("Time")
 ax2.set_ylabel("Control amplitude")
 for j in range(n_ctrls):
-    plot_util.plot_pulse(result.time, result.final_amps[:, j], ax=ax2)
-
+    ax2.step(result.time, 
+             np.hstack((result.final_amps[:, j], result.final_amps[-1, j])), 
+             where='post')
 plt.show()

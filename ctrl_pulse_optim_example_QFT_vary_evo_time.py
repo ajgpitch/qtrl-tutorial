@@ -53,8 +53,6 @@ logger = logging.get_logger()
 import qutip.control.pulseoptim as cpo
 import qutip.control.pulsegen as pulsegen
 from qutip.qip.algorithms import qft
-#local import
-import plot_util
 
 example_name = 'QFT'
 log_level=logging.INFO
@@ -110,7 +108,7 @@ optim = cpo.create_pulse_optimizer(H_d, H_c, U_0, U_targ, n_ts, evo_time,
                 fid_err_targ=fid_err_targ, min_grad=min_grad, 
                 max_iter=max_iter, max_wall_time=max_wall_time, 
                 optim_alg='LBFGSB', 
-                max_metric_corr=20, accuracy_factor = 1e8,
+                max_metric_corr=20, accuracy_factor = 1e-2,
                 dyn_type='UNIT', 
                 prop_type='DIAG', fid_type='UNIT', phase_option='PSU', 
                 init_pulse_type=p_type, 
@@ -179,7 +177,7 @@ for i in range(n_evo_times):
     print("\nFinal evolution\n{}\n".format(result.evo_full_final))
     print(result.evo_full_final)
     
-    print("********* Summary *****************")
+    print("*******  Result Summary ************")
     print("Final fidelity error {}".format(result.fid_err))
     print("Terminated due to {}".format(result.termination_reason))
     print("Number of iterations {}".format(result.num_iter))
@@ -198,8 +196,11 @@ for i in range(n_evo_times):
         dyn.num_tslots = n_ts
         
 # Plot the initial and final amplitudes
+print("\n***** Compare results ******")
 fig1 = plt.figure()
 for i in range(n_evo_times):
+    print("Result {} infidelity: {:0.4e}, termination reason: {}".format(
+            i, results[i].fid_err, results[i].termination_reason))
     #Initial amps
     ax1 = fig1.add_subplot(2, n_evo_times, i+1)
     ax1.set_title("Init amps T={}".format(evo_times[i]))
@@ -208,8 +209,11 @@ for i in range(n_evo_times):
     if i == 0:
         ax1.set_ylabel("Control amplitude")
     for j in range(n_ctrls):
-        plot_util.plot_pulse(results[i].time, 
-                             results[i].initial_amps[:, j], ax=ax1)
+        ax1.step(results[i].time, 
+             np.hstack((results[i].initial_amps[:, j], 
+                        results[i].initial_amps[-1, j])), 
+                 where='post')
+             
         
     ax2 = fig1.add_subplot(2, n_evo_times, i+n_evo_times+1)
     ax2.set_title("Final amps T={}".format(evo_times[i]))
@@ -218,7 +222,9 @@ for i in range(n_evo_times):
     if i == 0:
         ax2.set_ylabel("Control amplitude")
     for j in range(n_ctrls):
-        plot_util.plot_pulse(results[i].time, 
-                             results[i].final_amps[:, j], ax=ax2)
+        ax2.step(results[i].time, 
+             np.hstack((results[i].final_amps[:, j], 
+                        results[i].final_amps[-1, j])), 
+                 where='post')
 
 plt.show()
