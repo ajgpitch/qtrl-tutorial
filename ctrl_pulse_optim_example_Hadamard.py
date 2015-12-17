@@ -119,6 +119,8 @@ ax1.set_xlabel("Time")
 ax1.set_ylabel("Control amplitude")
 for j in range(n_ctrls):
     plot_util.plot_pulse(result.time, result.initial_amps[:, j], ax=ax1)
+    ax1.step(result.time[:-1], result.initial_amps[:, j])
+    ax1.plot(result.time[:-1], result.initial_amps[:, j])
 
 ax2 = fig1.add_subplot(2, 1, 2)
 ax2.set_title("Optimised Control Sequences")
@@ -126,5 +128,6 @@ ax2.set_xlabel("Time")
 ax2.set_ylabel("Control amplitude")
 for j in range(n_ctrls):
     plot_util.plot_pulse(result.time, result.final_amps[:, j], ax=ax2)
-
+    y = np.hstack((result.final_amps[:, j], result.final_amps[-1, j]))
+    ax2.step(result.time, y, where='post')
 plt.show()

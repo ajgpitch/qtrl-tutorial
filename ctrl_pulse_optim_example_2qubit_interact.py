@@ -49,6 +49,11 @@ log_level = logging.INFO
 random.seed(20)
 alpha = [random.random(),random.random()]
 beta  = [random.random(),random.random()]
+print("Couplings, alpha: {}, beta: {}".format(alpha, beta))
+alpha = [0.9, 0.7]
+beta  = [0.8, 0.9]
+#alpha = [0.9056396761745207, 0.6862541570267026]
+#beta = [0.7665092563626442, 0.9046162378132736]
 
 Sx = sigmax()
 Sz = sigmaz()
@@ -62,24 +67,22 @@ H_c = [tensor(Sz,Sz)]
 n_ctrls = len(H_c)
 
 q1_0 = q2_0 = Qobj([[1], [0]])
-
 q1_T = q2_T = Qobj([[0], [1]])
 
 psi_0 = tensor(q1_0, q2_0)
-
 psi_T = tensor(q1_T, q2_T)
 
 # ***** Define time evolution parameters *****
 # Number of time slots
-n_ts = 100
+n_ts = 10
 # Time allowed for the evolution
 evo_time = 18
 
 # Fidelity error target
-fid_err_targ = 1e-15
+fid_err_targ = 1e-10
 
 # Maximum iterations for the optisation algorithm
-max_iter = 100
+max_iter = 500
 # Maximum (elapsed) time allowed in seconds
 max_wall_time = 120
 
@@ -99,10 +102,14 @@ result = cpo.optimize_pulse_unitary(H_d, H_c, psi_0, psi_T, n_ts, evo_time,
                 fid_err_targ=fid_err_targ,
                 max_iter=max_iter, max_wall_time=max_wall_time, 
 #                dyn_params={'oper_dtype':Qobj},
-                #phase_option='SU',
+                # comment in/out these next three lines for CRAB/GRAPE
+#                alg='CRAB',
+#                alg_params={'init_coeff_scaling':5.0, 'num_coeffs':5, 'guess_pulse_type':None},
+#                method_params={'xtol':1e-3},
                 fid_params={'phase_option':'PSU'},
                 out_file_ext=f_ext, init_pulse_type=p_type, 
                 log_level=log_level, gen_stats=True)
+
 
 print("\n***********************************")
 print("Optimising complete. Stats follow:")
