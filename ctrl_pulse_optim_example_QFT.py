@@ -127,10 +127,8 @@ optim = cpo.create_pulse_optimizer(H_d, list(H_c), U_0, U_targ, n_ts, evo_time,
                 optim_method='fmin_l_bfgs_b',
 #                optim_method='l-bfgs-b',
                 dyn_type='UNIT', 
-#                dyn_params={'oper_dtype':Qobj},
-#                prop_type='APPROX', 
-#                fid_type='TDAPPROX', 
-                fid_params={'phase_option':'PSU'}, 
+                prop_type='DIAG', 
+                fid_type='UNIT', fid_params={'phase_option':'PSU'}, 
                 init_pulse_type=p_type, pulse_scaling=1.0,
                 log_level=log_level, gen_stats=True)
 
@@ -173,9 +171,7 @@ else:
 
 dyn.initialize_controls(init_amps)
 
-print("dimensional norm: {}".format(dyn.fid_computer.dimensional_norm))
-print("Initial infidelity: {}".format(dyn.fid_computer.get_fid_err()))
-#print("onto_evo_target: {}".format(dyn.onto_evo_target))
+print("Initial fid_err: ".format(dyn.fid_computer.get_fid_err()))
 
 # Save initial amplitudes to a text file
 pulsefile = "ctrl_amps_initial_" + f_ext
