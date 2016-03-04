@@ -81,7 +81,7 @@ n_ctrls = len(H_c)
 U_0 = tensor(identity(2), identity(2))
 print("U_0 {}".format(U_0))
 # Target for the gate evolution - Quantum Fourier Transform gate
-U_targ = qft.qft(2)
+U_targ = (qft.qft(2)).tidyup()
 #U_targ.dims = U_0.dims
 print("target {}".format(U_targ))
 
@@ -125,7 +125,7 @@ optim = cpo.create_pulse_optimizer(H_d, list(H_c), U_0, U_targ, n_ts, evo_time,
 #                optim_method='l-bfgs-b',
                 dyn_type='UNIT', 
                 prop_type='DIAG', 
-                fid_type='UNIT', fid_params={'phase_option':'PSU'}, 
+                fid_type='UNIT', fid_params={'phase_option':'SU'}, 
                 init_pulse_type=p_type, pulse_scaling=1.0,
                 log_level=log_level, gen_stats=True)
 
@@ -166,6 +166,17 @@ else:
         init_amps[:, j] = p_gen.gen_pulse()
 
 dyn.initialize_controls(init_amps)
+
+print("Initial fid_err: ".format(dyn.fid_computer.get_fid_err()))
+print("dim norm {}".format(dyn.fid_computer.dimensional_norm))
+
+full_evo = dyn.full_evo
+print("Check evo unitary:\n{}".format(full_evo.dag()*full_evo))
+
+overlap = U_targ.dag()*full_evo
+print("overlap:\n{}".format(overlap))
+
+print("man fid check:\n{}".format(overlap.tr()))
 
 # Save initial amplitudes to a text file
 pulsefile = "ctrl_amps_initial_" + f_ext
