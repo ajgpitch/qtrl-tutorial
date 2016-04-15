@@ -47,11 +47,12 @@ log_level = logging.INFO
 random.seed(20)
 alpha = [random.random(),random.random()]
 beta  = [random.random(),random.random()]
-print("Couplings, alpha: {}, beta: {}".format(alpha, beta))
-alpha = [0.9, 0.7]
-beta  = [0.8, 0.9]
+
+#alpha = [0.9, 0.7]
+#beta  = [0.8, 0.9]
 #alpha = [0.9056396761745207, 0.6862541570267026]
 #beta = [0.7665092563626442, 0.9046162378132736]
+print("Couplings, alpha: {}, beta: {}".format(alpha, beta))
 
 Sx = sigmax()
 Sz = sigmaz()

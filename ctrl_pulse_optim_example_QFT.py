@@ -238,5 +238,3 @@ for j in range(n_ctrls):
              np.hstack((result.final_amps[:, j], result.final_amps[-1, j])), 
              where='post')
 plt.show()
-
-
