@@ -13,7 +13,7 @@ teaching, and learning. Any other applications may require additional
 licensing
 
 Example to demonstrate using the control library to determine control
-pulses using the ctrlpulseoptim.create_pulse_optimizer function to 
+pulses using the ctrlpulseoptim.create_pulse_optimizer function to
 generate an Optimizer object, through which the configuration can be
 manipulated before running the optmisation algorithm. In this case it is
 demonstrated by modifying the initial ctrl pulses.
@@ -76,7 +76,7 @@ j = 0
 for c in H_c:
     j += 1
     print("ctrl {} \n{}".format(j, c))
-    
+
 n_ctrls = len(H_c)
 # start point for the gate evolution
 U_0 = tensor(identity(2), identity(2))
@@ -117,20 +117,20 @@ f_ext = "{}_n_ts{}_ptype{}.txt".format(example_name, n_ts, p_type)
 
 print("\n***********************************")
 print("Creating optimiser objects")
-optim = cpo.create_pulse_optimizer(H_d, list(H_c), U_0, U_targ, n_ts, evo_time, 
-                amp_lbound=-10.0, amp_ubound=10.0, 
-                fid_err_targ=fid_err_targ, min_grad=min_grad, 
-                max_iter=max_iter, max_wall_time=max_wall_time, 
-#                optim_method='LBFGSB', 
+optim = cpo.create_pulse_optimizer(H_d, list(H_c), U_0, U_targ, n_ts, evo_time,
+                amp_lbound=-10.0, amp_ubound=10.0,
+                fid_err_targ=fid_err_targ, min_grad=min_grad,
+                max_iter=max_iter, max_wall_time=max_wall_time,
+#                optim_method='LBFGSB',
                 method_params={'max_metric_corr':10, 'accuracy_factor':1e-3,
                                 'ftol':1e-15},
                 optim_method='fmin_l_bfgs_b',
 #                optim_method='l-bfgs-b',
-                dyn_type='UNIT', 
+                dyn_type='UNIT',
 #                dyn_params={'oper_dtype':Qobj},
-#                prop_type='APPROX', 
-#                fid_type='TDAPPROX', 
-                fid_params={'phase_option':'PSU'}, 
+#                prop_type='APPROX',
+#                fid_type='TDAPPROX',
+                fid_params={'phase_option':'PSU'},
                 init_pulse_type=p_type, pulse_scaling=1.0,
                 log_level=log_level, gen_stats=True)
 
@@ -182,8 +182,8 @@ pulsefile = "ctrl_amps_initial_" + f_ext
 dyn.save_amps(pulsefile, times="exclude")
 if (log_level <= logging.INFO):
     print("Initial amplitudes output to file: " + pulsefile)
-    
-if check_gradient: 
+
+if check_gradient:
     print("***********************************")
     print("Checking gradient")
     func = optim.fid_err_func_wrapper
@@ -201,7 +201,7 @@ pulsefile = "ctrl_amps_final_" + f_ext
 dyn.save_amps(pulsefile)
 if (log_level <= logging.INFO):
     print("Final amplitudes output to file: " + pulsefile)
-        
+
 print("\n***********************************")
 print("Optimising complete. Stats follow:")
 result.stats.report()
@@ -225,16 +225,16 @@ ax1.set_title("Initial control amps")
 ax1.set_xlabel("Time")
 ax1.set_ylabel("Control amplitude")
 for j in range(n_ctrls):
-    ax1.step(result.time, 
-             np.hstack((result.initial_amps[:, j], result.initial_amps[-1, j])), 
+    ax1.step(result.time,
+             np.hstack((result.initial_amps[:, j], result.initial_amps[-1, j])),
              where='post')
-             
+
 ax2 = fig1.add_subplot(2, 1, 2)
 ax2.set_title("Optimised Control Sequences")
 ax2.set_xlabel("Time")
 ax2.set_ylabel("Control amplitude")
 for j in range(n_ctrls):
-    ax2.step(result.time, 
-             np.hstack((result.final_amps[:, j], result.final_amps[-1, j])), 
+    ax2.step(result.time,
+             np.hstack((result.final_amps[:, j], result.final_amps[-1, j])),
              where='post')
 plt.show()
