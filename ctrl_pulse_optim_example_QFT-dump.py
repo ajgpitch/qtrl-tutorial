@@ -129,9 +129,11 @@ optim = cpo.create_pulse_optimizer(H_d, list(H_c), U_0, U_targ, n_ts, evo_time,
                 method_params={'max_metric_corr':10, 'accuracy_factor':1e-3,
                                 'ftol':1e-15},
                 optim_method='fmin_l_bfgs_b',
+                optim_params={'dumping':'FULL', 'dump_to_file':False},
 #                optim_method='l-bfgs-b',
-                dyn_type='UNIT', 
-                dyn_params={'dumping':'SUMMARY', 'dump_to_file':True},
+                dyn_type='UNIT',
+                dyn_params={'dumping':'SUMMARY', 'dump_to_file':True,
+                            'dump_dir':"~/QFT-dyndump"},
 #                dyn_params={'oper_dtype':Qobj},
 #                prop_type='APPROX',
 #                fid_type='TDAPPROX',
@@ -175,21 +177,42 @@ else:
     for j in range(n_ctrls):
         p_gen.init_pulse()
         init_amps[:, j] = p_gen.gen_pulse()
-        
-# Dump configuration
-# specify folder
-dyn.dump.dump_dir = "~/QFT-dump"
 
-# specify base name
-dyn.dump.fname_base = "QFT-example"
+if dyn.dump:
+    # Dump configuration
+    # specify folder
+    #dyn.dump.dump_dir = "~/QFT-dump"
 
-# specify summary file
-dyn.dump.summary_file = os.path.join(dyn.dump.dump_dir, "QFT-summary-specific.dat")
+    # specify base name
+    dyn.dump.fname_base = "QFT-example"
 
-# write interactive (or not)
+    # specify summary file
+    #dyn.dump.summary_file = os.path.join(dyn.dump.dump_dir, "QFT-summary-specific.dat")
 
-# customise calc obj dumps
+    # use tab for separator
+    dyn.dump.summary_sep = '\t'
+    dyn.dump.data_sep = '\t'
 
+    # write interactive (or not)
+    # customise calc obj dumps
+
+if optim.dump:
+    # Dump configuration
+    # specify folder
+    optim.dump.dump_dir = "~/QFT-optim-dump"
+
+    # specify base name
+    optim.dump.fname_base = "QFT-optim"
+
+    # specify summary file
+    optim.dump.summary_file = os.path.join(optim.dump.dump_dir, "QFT-optim_sum-specific.dat")
+
+    # write interactive (or not)
+    # customise calc obj dumps
+
+    # use tab for separator
+    optim.dump.summary_sep = '\t'
+    optim.dump.data_sep = '\t'
 
 dyn.initialize_controls(init_amps)
 
@@ -223,8 +246,11 @@ if (log_level <= logging.INFO):
     print("Final amplitudes output to file: " + pulsefile)
 
 print("\n***********************************")
-print("Optimising complete. Stats follow:")
-result.stats.report()
+print("Optimising complete.")
+if result.stats:
+    print(" Stats follow:")
+    result.stats.report()
+
 print("Final evolution\n{}\n".format(result.evo_full_final))
 
 print("********* Summary *****************")
@@ -238,7 +264,7 @@ print("Completed in {} HH:MM:SS.US".format(
 # print "Final gradient normal {}".format(result.grad_norm_final)
 print("***********************************")
 
-if not dyn.dump.write_to_file:
+if dyn.dump and not dyn.dump.write_to_file:
     # standard location
     dyn.dump.writeout()
     # use a specific file stream
@@ -246,10 +272,23 @@ if not dyn.dump.write_to_file:
     f = open(dump_dest, 'wb')
     dyn.dump.writeout(f)
     f.close()
-     
+
     # use a specific file name
     dump_dest = "qtrl-QFT-dump1.txt"
     dyn.dump.writeout(dump_dest)
+
+if optim.dump and not optim.dump.write_to_file:
+    # standard location
+    optim.dump.writeout()
+    # use a specific file stream
+    dump_dest = os.path.expanduser("~/qtrl-QFT-optimdump1.txt")
+    f = open(dump_dest, 'wb')
+    optim.dump.writeout(f)
+    f.close()
+
+    # use a specific file name
+    dump_dest = "qtrl-QFT-optimdump2.txt"
+    optim.dump.writeout(dump_dest)
 
 # Plot the initial and final amplitudes
 fig1 = plt.figure()
