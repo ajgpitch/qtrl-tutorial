@@ -113,7 +113,7 @@ print("***********************************")
 fig1 = plt.figure()
 ax1 = fig1.add_subplot(2, 1, 1)
 ax1.set_title("Initial control amps")
-ax1.set_xlabel("Time")
+#ax1.set_xlabel("Time")
 ax1.set_ylabel("Control amplitude")
 for j in range(n_ctrls):
     ax1.step(result.time, 
