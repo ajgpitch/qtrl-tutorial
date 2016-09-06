@@ -5,7 +5,6 @@
 .f2py_f2cmap
 # Output files
 *.txt
-*.dat
 
 # Packages
 *.egg

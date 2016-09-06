@@ -59,7 +59,7 @@ from qutip.qip.algorithms import qft
 
 example_name = 'QFT'
 log_level=logging.INFO
-amps_file = "ctrl_amps_initial_QFT_n_ts100_example.txt"
+amps_file = "ctrl_amps_initial_QFT_n_ts100_example.dat"
 # ****************************************************************
 # Define the physics of the problem
 Sx = sigmax()
