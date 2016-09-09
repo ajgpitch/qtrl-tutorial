@@ -54,10 +54,11 @@ n_ctrls = len(H_c)
 U_0 = identity(2**nSpins)
 # Hadamard gate
 #U_targ = Qobj(np.array([[1,1],[1,-1]], dtype=complex)/np.sqrt(2))
-U_targ = hadamard_transform(nSpins)
+# Hadamard is determinant -1, so need prefactor phase for SU fidelity
+U_targ = 1.0j*hadamard_transform(nSpins)
 # ***** Define time evolution parameters *****
 # Number of time slots
-n_ts = 4
+n_ts = 40
 # Time allowed for the evolution
 evo_time = 6
 
@@ -89,7 +90,7 @@ result = cpo.optimize_pulse_unitary(H_d, H_c, U_0, U_targ, n_ts, evo_time,
                 max_iter=max_iter, max_wall_time=max_wall_time, 
 #                dyn_params={'oper_dtype':Qobj},
                 #phase_option='SU',
-                fid_params={'phase_option':'PSU'},
+                fid_params={'phase_option':'SU'},
                 out_file_ext=f_ext, init_pulse_type=p_type, 
                 log_level=log_level, gen_stats=True)
 
