@@ -31,7 +31,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import datetime
 
-from qutip import Qobj, identity, sigmax, sigmaz
+from qutip import Qobj, identity, sigmax, sigmay, sigmaz
 from qutip.qip import hadamard_transform
 import qutip.logging_utils as logging
 logger = logging.get_logger()
@@ -46,7 +46,7 @@ log_level = logging.INFO
 
 nSpins = 1
 
-H_d = sigmaz()
+H_0 = sigmaz()
 H_c = [sigmax()]
 # Number of ctrls
 n_ctrls = len(H_c)
@@ -54,11 +54,10 @@ n_ctrls = len(H_c)
 U_0 = identity(2**nSpins)
 # Hadamard gate
 #U_targ = Qobj(np.array([[1,1],[1,-1]], dtype=complex)/np.sqrt(2))
-# Hadamard is determinant -1, so need prefactor phase for SU fidelity
-U_targ = 1.0j*hadamard_transform(nSpins)
+U_targ = hadamard_transform(nSpins)
 # ***** Define time evolution parameters *****
 # Number of time slots
-n_ts = 100
+n_ts = 24
 # Time allowed for the evolution
 evo_time = 6
 
@@ -80,12 +79,46 @@ p_type = 'ZERO'
 # *************************************************************
 # File extension for output files
 
+# ***************************
+# Set up time dependent drift
+# comment in/out desired drift amps
+# *** sin wave modulated ***
+# cycles = 10
+# drift_amps = [np.sin(2*cycles*np.pi*float(k)/n_ts) for k in range(n_ts)]
+
+# *** flat ***
+# - this should produce same as a fixed drift
+# drift_amps = np.ones([n_ts], dtype=float)
+
+# *** step ***
+drift_amps = [np.round(float(k)/n_ts) for k in range(n_ts)]
+
+# Generate list of controls for each timeslot
+H_d = H_0
+ctrls = []
+#for k in range(n_ts):
+#    if k % 3 == 0:
+#        ctrls.append([sigmaz()])
+#    elif k % 3 == 1:
+#        ctrls.append([sigmaz()])
+#    else:
+#        ctrls.append([sigmaz()])
+        
+for k in range(n_ts):
+    if k % 3 == 0:
+        ctrls.append([sigmax()])
+    else:
+        ctrls.append([identity(2)])
+        
+ctrls = np.array(ctrls)
+
+# ***************************
 f_ext = "{}_n_ts{}_ptype{}.txt".format(example_name, n_ts, p_type)
 
 # Run the optimisation
 print("\n***********************************")
 print("Starting pulse optimisation")
-result = cpo.optimize_pulse_unitary(H_d, H_c, U_0, U_targ, n_ts, evo_time, 
+result = cpo.optimize_pulse_unitary(H_d, ctrls, U_0, U_targ, n_ts, evo_time, 
                 fid_err_targ=fid_err_targ, min_grad=min_grad, 
                 max_iter=max_iter, max_wall_time=max_wall_time, 
 #                dyn_params={'oper_dtype':Qobj},
@@ -110,8 +143,9 @@ print("Completed in {} HH:MM:SS.US".\
         format(datetime.timedelta(seconds=result.wall_time)))
 print("***********************************")
 
-# Plot the initial and final amplitudes
+# Plot the drift, initial and final amplitudes
 fig1 = plt.figure()
+
 ax1 = fig1.add_subplot(2, 1, 1)
 ax1.set_title("Initial control amps")
 #ax1.set_xlabel("Time")

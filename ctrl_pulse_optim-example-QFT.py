@@ -60,6 +60,15 @@ from qutip.qip.algorithms import qft
 
 example_name = 'QFT'
 log_level=logging.INFO
+
+# Outfile options
+out_fext = "txt"
+
+# plotting options
+show_linear = False
+save_plots = True
+plot_fext = "pdf"
+
 # ****************************************************************
 # Define the physics of the problem
 Sx = sigmax()
@@ -90,7 +99,7 @@ print("Check unitary (should be I) {}".format(U_targ.dag()*U_targ))
 
 # ***** Define time evolution parameters *****
 # Number of time slots
-n_ts = 10
+n_ts = 100
 # Time allowed for the evolution
 evo_time = 10
 
@@ -108,17 +117,18 @@ min_grad = 1e-20
 check_gradient = False
 
 # Initial pulse type
-# pulse type alternatives: RND|ZERO|LIN|SINE|SQUARE|SAW|TRIANGLE|
+# pulse type alternatives: RND|ZERO|LIN|SINE|SQUARE|SAW|TRIANGLE|RNDWAVES
 p_type = 'LIN'
 # *************************************************************
 # File extension for output files
 
-f_ext = "{}_n_ts{}_ptype{}.txt".format(example_name, n_ts, p_type)
+fbase = "{}_n_ts{}_ptype{}".format(example_name, n_ts, p_type)
+outfile_end = "{}.{}".format(fbase, out_fext)
 
 print("\n***********************************")
 print("Creating optimiser objects")
 optim = cpo.create_pulse_optimizer(H_d, list(H_c), U_0, U_targ, n_ts, evo_time,
-                amp_lbound=-10.0, amp_ubound=10.0,
+#                amp_lbound=-10.0, amp_ubound=10.0,
                 fid_err_targ=fid_err_targ, min_grad=min_grad,
                 max_iter=max_iter, max_wall_time=max_wall_time,
 #                optim_method='LBFGSB',
@@ -178,7 +188,7 @@ print("Initial infidelity: {}".format(dyn.fid_computer.get_fid_err()))
 #print("onto_evo_target: {}".format(dyn.onto_evo_target))
 
 # Save initial amplitudes to a text file
-pulsefile = "ctrl_amps_initial_" + f_ext
+pulsefile = "ctrl_amps_initial_" + outfile_end
 dyn.save_amps(pulsefile, times="exclude")
 if (log_level <= logging.INFO):
     print("Initial amplitudes output to file: " + pulsefile)
@@ -197,7 +207,7 @@ print("Starting pulse optimisation")
 result = optim.run_optimization()
 
 # Save final amplitudes to a text file
-pulsefile = "ctrl_amps_final_" + f_ext
+pulsefile = "ctrl_amps_final_" + outfile_end
 dyn.save_amps(pulsefile)
 if (log_level <= logging.INFO):
     print("Final amplitudes output to file: " + pulsefile)
@@ -237,4 +247,27 @@ for j in range(n_ctrls):
     ax2.step(result.time,
              np.hstack((result.final_amps[:, j], result.final_amps[-1, j])),
              where='post')
+             
+if save_plots:
+    plot_fname = "{}_piecewise.{}".format(fbase, plot_fext)
+    fig1.savefig(plot_fname, bbox_inches='tight')
+
+if show_linear:
+    fig2 = plt.figure()
+    ax1 = fig2.add_subplot(2, 1, 1)
+    ax1.set_title("Initial control amps")
+    #ax1.set_xlabel("Time")
+    ax1.set_ylabel("Control amplitude")
+    for j in range(n_ctrls):
+        ax1.plot(result.time[:-1], result.initial_amps[:, j])
+                 
+    ax2 = fig2.add_subplot(2, 1, 2)
+    ax2.set_title("Optimised Control Sequences")
+    ax2.set_xlabel("Time")
+    ax2.set_ylabel("Control amplitude")
+    for j in range(n_ctrls):
+        ax2.plot(result.time[:-1], result.final_amps[:, j])
+    if save_plots:
+        plot_fname = "{}_lin.{}".format(fbase, plot_fext)
+        fig2.savefig(plot_fname, bbox_inches='tight')
 plt.show()
