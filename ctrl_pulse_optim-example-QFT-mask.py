@@ -81,8 +81,23 @@ class FidCompUnitaryMask(fidcomp.FidCompUnitary):
     def ctrl_tslot_mask(self, value):
         """
         Check mask validity.
-        Set attribute if valid
+        Set ctrl_tslot_mask if valid
+        Used to determine which timeslots or specific controls in timeslots
+        will be ignored in the optimisation.
+
+        Parameters
+        ----------
+        value : array_like bool
+            If a 1d array is given, then this is assumed to be a timeslot mask
+            The length must equal the number of timeslots
+
+            If a 2d array is given, then this must be [num_tslots, num_ctrls]
+
+            In both cases a the attribute will be set to a ndarray of bool
+            [num_tslots, num_ctrls], where False implies the control amplitude
+            in the timeslot will not be optimised.
         """
+
         dyn = self.parent
         try:
             mask = np.array(value, dtype=bool)
@@ -125,8 +140,6 @@ class FidCompUnitaryMask(fidcomp.FidCompUnitary):
         return grad
 
 # *********** Example to test the control timeslot masks *********
-
-
 
 example_name = 'QFT'
 log_level=logging.INFO
@@ -187,15 +200,14 @@ f_ext = "{}_n_ts{}_ptype{}.txt".format(example_name, n_ts, p_type)
 mask_list = []
 
 # scenario: initially only first quarter of timeslots
-#mask_list.append([True if k < n_ts/4 else False for k in range(n_ts)])
-#mask_list.append([True if k >= n_ts/4 else False for k in range(n_ts)])
+mask_list.append([True if k < n_ts/4 else False for k in range(n_ts)])
+mask_list.append([True if k >= n_ts/4 else False for k in range(n_ts)])
 
 # scenario: intially only one control, then the other three
-false_mask = np.zeros([n_ts, n_ctrls])
-mask_list.append(np.zeros([n_ts, n_ctrls], dtype=bool))
-mask_list[0][:, 0] = True
-mask_list.append(np.ones([n_ts, n_ctrls], dtype=bool))
-mask_list[1][:, 0] = False
+#mask_list.append(np.zeros([n_ts, n_ctrls], dtype=bool))
+#mask_list[0][:, 0] = True
+#mask_list.append(np.ones([n_ts, n_ctrls], dtype=bool))
+#mask_list[1][:, 0] = False
 
 print("\n***********************************")
 print("Creating optimiser objects")
