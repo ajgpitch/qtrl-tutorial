@@ -79,37 +79,18 @@ p_type = 'ZERO'
 # *************************************************************
 # File extension for output files
 
-# ***************************
-# Set up time dependent drift
-# comment in/out desired drift amps
-# *** sin wave modulated ***
-# cycles = 10
-# drift_amps = [np.sin(2*cycles*np.pi*float(k)/n_ts) for k in range(n_ts)]
-
-# *** flat ***
-# - this should produce same as a fixed drift
-# drift_amps = np.ones([n_ts], dtype=float)
-
-# *** step ***
-drift_amps = [np.round(float(k)/n_ts) for k in range(n_ts)]
-
 # Generate list of controls for each timeslot
 H_d = H_0
 ctrls = []
-#for k in range(n_ts):
-#    if k % 3 == 0:
-#        ctrls.append([sigmaz()])
-#    elif k % 3 == 1:
-#        ctrls.append([sigmaz()])
-#    else:
-#        ctrls.append([sigmaz()])
-        
+
+# In this example there is only a useful control in every third timeslot
+# Therefore we should see that amplitudes remain as initial in other timeslots
 for k in range(n_ts):
     if k % 3 == 0:
         ctrls.append([sigmax()])
     else:
         ctrls.append([identity(2)])
-        
+
 ctrls = np.array(ctrls)
 
 # ***************************
@@ -118,13 +99,13 @@ f_ext = "{}_n_ts{}_ptype{}.txt".format(example_name, n_ts, p_type)
 # Run the optimisation
 print("\n***********************************")
 print("Starting pulse optimisation")
-result = cpo.optimize_pulse_unitary(H_d, ctrls, U_0, U_targ, n_ts, evo_time, 
-                fid_err_targ=fid_err_targ, min_grad=min_grad, 
-                max_iter=max_iter, max_wall_time=max_wall_time, 
+result = cpo.optimize_pulse_unitary(H_d, ctrls, U_0, U_targ, n_ts, evo_time,
+                fid_err_targ=fid_err_targ, min_grad=min_grad,
+                max_iter=max_iter, max_wall_time=max_wall_time,
 #                dyn_params={'oper_dtype':Qobj},
                 #phase_option='SU',
                 fid_params={'phase_option':'PSU'},
-                out_file_ext=f_ext, init_pulse_type=p_type, 
+                out_file_ext=f_ext, init_pulse_type=p_type,
                 log_level=log_level, gen_stats=True)
 
 print("\n***********************************")
@@ -151,16 +132,16 @@ ax1.set_title("Initial control amps")
 #ax1.set_xlabel("Time")
 ax1.set_ylabel("Control amplitude")
 for j in range(n_ctrls):
-    ax1.step(result.time, 
-             np.hstack((result.initial_amps[:, j], result.initial_amps[-1, j])), 
+    ax1.step(result.time,
+             np.hstack((result.initial_amps[:, j], result.initial_amps[-1, j])),
              where='post')
-             
+
 ax2 = fig1.add_subplot(2, 1, 2)
 ax2.set_title("Optimised Control Sequences")
 ax2.set_xlabel("Time")
 ax2.set_ylabel("Control amplitude")
 for j in range(n_ctrls):
-    ax2.step(result.time, 
-             np.hstack((result.final_amps[:, j], result.final_amps[-1, j])), 
+    ax2.step(result.time,
+             np.hstack((result.final_amps[:, j], result.final_amps[-1, j])),
              where='post')
 plt.show()

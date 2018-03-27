@@ -13,7 +13,7 @@ teaching, and learning. Any other applications may require additional
 licensing
 
 Example to demonstrate using the control library to determine control
-pulses using the ctrlpulseoptim.create_pulse_optimizer function to 
+pulses using the ctrlpulseoptim.create_pulse_optimizer function to
 generate an Optimizer object, through which the configuration can be
 manipulated before running the optmisation algorithm. In this case it is
 demonstrated by modifying the initial ctrl pulses.
@@ -103,17 +103,17 @@ p_type = 'LIN'
 
 print("\n***********************************")
 print("Creating optimiser objects")
-optim = cpo.create_pulse_optimizer(H_d, H_c, U_0, U_targ, n_ts, evo_time, 
-                amp_lbound=-5.0, amp_ubound=5.0, 
-                fid_err_targ=fid_err_targ, min_grad=min_grad, 
-                max_iter=max_iter, max_wall_time=max_wall_time, 
-                optim_alg='LBFGSB', 
-                max_metric_corr=20, accuracy_factor = 1e-2,
-                dyn_type='UNIT', 
-                prop_type='DIAG', fid_type='UNIT', phase_option='PSU', 
-                init_pulse_type=p_type, 
+optim = cpo.create_pulse_optimizer(H_d, H_c, U_0, U_targ, n_ts, evo_time,
+                amp_lbound=-5.0, amp_ubound=5.0,
+                fid_err_targ=fid_err_targ, min_grad=min_grad,
+                max_iter=max_iter, max_wall_time=max_wall_time,
+                optim_method='fmin_l_bfgs_b',
+                method_params={'max_metric_corr':20, 'accuracy_factor':1e8},
+                dyn_type='UNIT',
+                fid_params={'phase_option':'PSU'},
+                init_pulse_type=p_type,
                 log_level=log_level, gen_stats=True)
-                
+
 print("\n***********************************")
 print("Configuring optimiser objects")
 
@@ -131,8 +131,8 @@ for i in range(n_evo_times):
     if i > 0:
         # Create a new pulse generator for the new dynamics
         p_gen = pulsegen.create_pulse_gen(p_type, dyn)
-    
-    
+
+
     # Generate different pulses for each control
     init_amps = np.zeros([n_ts, n_ctrls])
     if (p_gen.periodic):
@@ -151,32 +151,32 @@ for i in range(n_evo_times):
         # Should be random pulse
         for j in range(n_ctrls):
             init_amps[:, j] = p_gen.gen_pulse()
-    
+
     dyn.initialize_controls(init_amps, init_tslots=False)
-    
+
     f_ext = "{}_n_ts{}_ptype{}.txt".format(example_name, n_ts, p_type)
     # Save initial amplitudes to a text file
     pulsefile = "ctrl_amps_initial_" + f_ext
     dyn.save_amps(pulsefile)
     if (log_level <= logging.INFO):
         print("Initial amplitudes output to file: " + pulsefile)
-    
+
     print("***********************************")
     print("Starting pulse optimisation for T={}".format(evo_time))
     result = optim.run_optimization()
-    
+
     # Save final amplitudes to a text file
     pulsefile = "ctrl_amps_final_" + f_ext
     dyn.save_amps(pulsefile)
     if (log_level <= logging.INFO):
         print("Final amplitudes output to file: " + pulsefile)
-            
+
     print("\n***********************************")
     print("Optimising complete. Stats follow:")
     result.stats.report()
     print("\nFinal evolution\n{}\n".format(result.evo_full_final))
     print(result.evo_full_final)
-    
+
     print("*******  Result Summary ************")
     print("Final fidelity error {}".format(result.fid_err))
     print("Terminated due to {}".format(result.termination_reason))
@@ -185,7 +185,7 @@ for i in range(n_evo_times):
             format(datetime.timedelta(seconds=result.wall_time)))
     print("Final gradient normal {}".format(result.grad_norm_final))
     print("***********************************")
-    
+
     results.append(result)
     if i+1 < len(evo_times):
         # reconfigure the dynamics for the next evo time
@@ -194,7 +194,7 @@ for i in range(n_evo_times):
         dyn.tau = None
         dyn.evo_time = evo_time
         dyn.num_tslots = n_ts
-        
+
 # Plot the initial and final amplitudes
 print("\n***** Compare results ******")
 fig1 = plt.figure()
@@ -209,12 +209,12 @@ for i in range(n_evo_times):
     if i == 0:
         ax1.set_ylabel("Control amplitude")
     for j in range(n_ctrls):
-        ax1.step(results[i].time, 
-             np.hstack((results[i].initial_amps[:, j], 
-                        results[i].initial_amps[-1, j])), 
+        ax1.step(results[i].time,
+             np.hstack((results[i].initial_amps[:, j],
+                        results[i].initial_amps[-1, j])),
                  where='post')
-             
-        
+
+
     ax2 = fig1.add_subplot(2, n_evo_times, i+n_evo_times+1)
     ax2.set_title("Final amps T={}".format(evo_times[i]))
     ax2.set_xlabel("Time")
@@ -222,9 +222,9 @@ for i in range(n_evo_times):
     if i == 0:
         ax2.set_ylabel("Control amplitude")
     for j in range(n_ctrls):
-        ax2.step(results[i].time, 
-             np.hstack((results[i].final_amps[:, j], 
-                        results[i].final_amps[-1, j])), 
+        ax2.step(results[i].time,
+             np.hstack((results[i].final_amps[:, j],
+                        results[i].final_amps[-1, j])),
                  where='post')
-
+plt.tight_layout()
 plt.show()

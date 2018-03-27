@@ -56,12 +56,12 @@ cfg.param_fname = "coup_osc_param.ini"
 cfg.param_fpath = os.path.join(os.getcwd(), cfg.param_fname)
 cfg.log_level = log_level
 # Initial pulse type
-# pulse type alternatives: 
+# pulse type alternatives:
 # RNDWAVES|RNDFOURIER|RNDWALK1|RNDWALK2|RND|ZERO|LIN|SINE|SQUARE|SAW|TRIANGLE|
 cfg.pulse_type = 'RNDWAVES'
 cfg.amp_lbound = -5.0
 cfg.amp_ubound = 5.0
-    
+
 # load the config parameters
 # note these will overide those above if present in the file
 print("Loading config parameters from {}".format(cfg.param_fpath))
@@ -75,7 +75,7 @@ dyn = dynamics.DynamicsSymplectic(cfg)
 #dyn.fid_computer = fidcomp.FidCompTraceDiffApprox(dyn)
 #dyn.fid_computer.epsilon = 0.1
 #dyn.oper_dtype = Qobj
-        
+
 dyn.num_tslots = 200
 dyn.evo_time = 10.0
 
@@ -90,7 +90,7 @@ dyn.rot = 1.0
 print("Loading dynamics parameters from {}".format(cfg.param_fpath))
 loadparams.load_parameters(cfg.param_fpath, dynamics=dyn)
 
-dyn.init_timeslots()      
+dyn.init_timeslots()
 n_ts = dyn.num_tslots
 
 # Create a pulse generator of the type specified
@@ -116,7 +116,7 @@ tc.break_on_targ = True
 print("Loading termination condition parameters from {}".format(
         cfg.param_fpath))
 loadparams.load_parameters(cfg.param_fpath, term_conds=tc)
-        
+
 # Create the optimiser object
 if cfg.optim_method == 'BFGS':
     optim = optimizer.OptimizerBFGS(cfg, dyn)
@@ -136,12 +136,12 @@ optim.config = cfg
 optim.dynamics = dyn
 optim.termination_conditions = tc
 optim.pulse_generator = p_gen
-    
+
 # load the optimiser parameters
 # note these will overide those above if present in the file
 print("Loading optimiser parameters from {}".format(cfg.param_fpath))
 loadparams.load_parameters(cfg.param_fpath, optim=optim)
-    
+
 # ****************************************************************
 # Define the physics of the problem
 
@@ -151,9 +151,9 @@ g2 = 2*(dyn.coupling1 - dyn.coupling2)
 #g1 = 1.0
 #g2 = 0.2
 A0 = Qobj(np.array([
-                    [1, 0, g1, 0], 
-                    [0, 1, 0, g2], 
-                    [g1, 0, 1, 0], 
+                    [1, 0, g1, 0],
+                    [0, 1, 0, g2],
+                    [g1, 0, 1, 0],
                     [0, g2, 0, 1]]))
 dyn.drift_dyn_gen = A0
 
@@ -173,19 +173,19 @@ A_sqz = Qobj(dyn.sqz*np.array([
                     [0, 0, 0, 0],
                     [0, 0, 0, 0]
                     ]))
-dyn.ctrl_dyn_gen = [A_rot, A_sqz]  
+dyn.ctrl_dyn_gen = [A_rot, A_sqz]
 n_ctrls = dyn.get_num_ctrls()
 
 dyn.initial = identity(4)
 
 # Target
 A_targ = Qobj(np.array([
-                [0, 0, 1, 0], 
-                [0, 0, 0, 1], 
-                [1, 0, 0, 0], 
+                [0, 0, 1, 0],
+                [0, 0, 0, 1],
+                [1, 0, 0, 0],
                 [0, 1, 0, 0]
                 ]))
-          
+
 Omg = Qobj(sympl.calc_omega(2))
 print("Omega:\n{}\n".format(Omg))
 
@@ -213,7 +213,7 @@ pulsefile = "ctrl_amps_final_" + f_ext
 dyn.save_amps(pulsefile)
 if (log_level <= logging.INFO):
     print("Final amplitudes output to file: " + pulsefile)
-        
+
 print("\n***********************************")
 print("Optimising complete. Stats follow:")
 result.stats.report()
@@ -237,17 +237,18 @@ ax1.set_title("Initial control amps")
 ax1.set_xlabel("Time")
 ax1.set_ylabel("Control amplitude")
 for j in range(n_ctrls):
-    ax1.step(result.time, 
-             np.hstack((result.initial_amps[:, j], result.initial_amps[-1, j])), 
+    ax1.step(result.time,
+             np.hstack((result.initial_amps[:, j], result.initial_amps[-1, j])),
              where='post')
-             
+
 ax2 = fig1.add_subplot(2, 1, 2)
 ax2.set_title("Optimised Control Sequences")
 ax2.set_xlabel("Time")
 ax2.set_ylabel("Control amplitude")
 for j in range(n_ctrls):
-    ax2.step(result.time, 
-             np.hstack((result.final_amps[:, j], result.final_amps[-1, j])), 
+    ax2.step(result.time,
+             np.hstack((result.final_amps[:, j], result.final_amps[-1, j])),
              where='post')
+plt.tight_layout()
 plt.show()
 

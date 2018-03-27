@@ -55,7 +55,8 @@ U_0 = identity(2**nSpins)
 # Hadamard gate
 #U_targ = Qobj(np.array([[1,1],[1,-1]], dtype=complex)/np.sqrt(2))
 # Hadamard is determinant -1, so need prefactor phase for SU fidelity
-U_targ = 1.0j*hadamard_transform(nSpins)
+#U_targ = 1.0j*hadamard_transform(nSpins)
+U_targ = hadamard_transform(nSpins)
 # ***** Define time evolution parameters *****
 # Number of time slots
 n_ts = 100
@@ -85,13 +86,13 @@ f_ext = "{}_n_ts{}_ptype{}.txt".format(example_name, n_ts, p_type)
 # Run the optimisation
 print("\n***********************************")
 print("Starting pulse optimisation")
-result = cpo.optimize_pulse_unitary(H_d, H_c, U_0, U_targ, n_ts, evo_time, 
-                fid_err_targ=fid_err_targ, min_grad=min_grad, 
-                max_iter=max_iter, max_wall_time=max_wall_time, 
+result = cpo.optimize_pulse_unitary(H_d, H_c, U_0, U_targ, n_ts, evo_time,
+                fid_err_targ=fid_err_targ, min_grad=min_grad,
+                max_iter=max_iter, max_wall_time=max_wall_time,
 #                dyn_params={'oper_dtype':Qobj},
                 #phase_option='SU',
                 fid_params={'phase_option':'PSU'},
-                out_file_ext=f_ext, init_pulse_type=p_type, 
+                out_file_ext=f_ext, init_pulse_type=p_type,
                 log_level=log_level, gen_stats=True)
 
 print("\n***********************************")
@@ -117,16 +118,17 @@ ax1.set_title("Initial control amps")
 #ax1.set_xlabel("Time")
 ax1.set_ylabel("Control amplitude")
 for j in range(n_ctrls):
-    ax1.step(result.time, 
-             np.hstack((result.initial_amps[:, j], result.initial_amps[-1, j])), 
+    ax1.step(result.time,
+             np.hstack((result.initial_amps[:, j], result.initial_amps[-1, j])),
              where='post')
-             
+
 ax2 = fig1.add_subplot(2, 1, 2)
 ax2.set_title("Optimised Control Sequences")
 ax2.set_xlabel("Time")
 ax2.set_ylabel("Control amplitude")
 for j in range(n_ctrls):
-    ax2.step(result.time, 
-             np.hstack((result.final_amps[:, j], result.final_amps[-1, j])), 
+    ax2.step(result.time,
+             np.hstack((result.final_amps[:, j], result.final_amps[-1, j])),
              where='post')
+plt.tight_layout()
 plt.show()
