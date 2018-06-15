@@ -136,7 +136,7 @@ target_DP = E_targ
 n_ts = 10
 
 # Time allowed for the evolution
-evo_time = 5
+evo_time = 10
 
 # ***** Define the termination conditions *****
 # Fidelity error target

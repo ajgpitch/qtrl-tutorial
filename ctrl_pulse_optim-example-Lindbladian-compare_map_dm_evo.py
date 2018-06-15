@@ -54,6 +54,8 @@ import qutip.control.pulseoptim as cpo
 example_name = 'Lindblad_compare'
 log_level = logging.INFO
 
+REPORT_STATS = False
+
 # ****************************************************************
 # Define the physics of the problem
 Sx = sigmax()
@@ -86,20 +88,22 @@ LC_z = liouvillian(Sz)
 
 E0 = sprepost(Si, Si)
 # target map 1
-E_targ = sprepost(had_gate, had_gate)
+# E_targ = sprepost(had_gate, had_gate)
 # target map 2
-#E_targ = sprepost(Sx, Sx)
+E_targ = sprepost(Sx, Sx)
 
-psi0 = basis(2, 0)
+psi0 = basis(2, 1) # ground state
+#psi0 = basis(2, 0) # excited state
 rho0 = ket2dm(psi0)
 print("rho0:\n{}\n".format(rho0))
 rho0_vec = operator_to_vector(rho0)
 print("rho0_vec:\n{}\n".format(rho0_vec))
 
 # target state 1
-psi_targ = (basis(2, 0) + basis(2, 1)).unit()
+# psi_targ = (basis(2, 0) + basis(2, 1)).unit()
 # target state 2
-#psi_targ = basis(2, 1)
+#psi_targ = basis(2, 1) # ground state
+psi_targ = basis(2, 0) # excited state
 #psi_targ = psi0
 
 rho_targ = ket2dm(psi_targ)
@@ -107,10 +111,10 @@ print("rho_targ:\n{}\n".format(rho_targ))
 rho_targ_vec = operator_to_vector(rho_targ)
 print("rho_targ_vec:\n{}\n".format(rho_targ_vec))
 
-print("L0:\n{}\n".format(L0))
-print("LC_x:\n{}\n".format(LC_x))
-print("LC_y:\n{}\n".format(LC_y))
-print("LC_z:\n{}\n".format(LC_z))
+#print("L0:\n{}\n".format(L0))
+#print("LC_x:\n{}\n".format(LC_x))
+#print("LC_y:\n{}\n".format(LC_y))
+#print("LC_z:\n{}\n".format(LC_z))
 
 print("Fidelity rho0, rho_targ: {}".format(fidelity(rho0, rho_targ)))
 
@@ -126,9 +130,9 @@ print("Fidelity rho_targ, rho0_evo_map: {}".format(fidelity(rho_targ, rho0_evo_m
 drift = L0
 
 #Controls
-ctrls = [LC_x, LC_z]
-#ctrls = [LC_y]
-ctrls = [LC_x]
+#ctrls = [LC_x, LC_z]
+ctrls = [LC_y]
+#ctrls = [LC_x]
 
 # Number of ctrls
 n_ctrls = len(ctrls)
@@ -139,11 +143,11 @@ n_ctrls = len(ctrls)
 n_ts = 10
 
 # Time allowed for the evolution
-evo_time = 5
+evo_time = 50
 
 # ***** Define the termination conditions *****
 # Fidelity error target
-fid_err_targ = 1e-5
+fid_err_targ = 1e-3
 
 # Maximum iterations for the optisation algorithm
 max_iter = 500
@@ -157,7 +161,7 @@ min_grad = 1e-20
 
 # Initial pulse type
 # pulse type alternatives: RND|ZERO|LIN|SINE|SQUARE|SAW|TRIANGLE|
-p_type = 'LIN'
+p_type = 'RND'
 
 # *************************************************************
 
@@ -184,16 +188,21 @@ print("Starting pulse state-state optimisation")
 result_s = cpo.optimize_pulse(drift, ctrls, rho0, rho_targ, n_ts, evo_time,
                 fid_err_targ=fid_err_targ, min_grad=min_grad,
                 max_iter=max_iter, max_wall_time=max_wall_time,
-                amp_lbound=-10.0, amp_ubound=10.0,
+                amp_lbound=-0.5, amp_ubound=0.5,
 #                dyn_params={'oper_dtype':Qobj},
 #                prop_type='AUG_MAT',
 #                fid_type='UNIT',
+                accuracy_factor=1,
                 out_file_ext=f_ext, init_pulse_type=p_type,
                 log_level=log_level, gen_stats=True)
 
 print("***********************************")
-print("\nOptimising complete. Stats follow:")
-result_s.stats.report()
+print("\nOptimising complete.")
+
+if REPORT_STATS:
+    print("Stats follow:")
+    result_s.stats.report()
+
 print("Final evolution\n{}\n".format(result_s.evo_full_final))
 print("********* Summary *****************")
 print("Initial fidelity error {}".format(result_s.initial_fid_err))
@@ -231,7 +240,7 @@ print("Starting pulse map optimisation")
 result_m = cpo.optimize_pulse(drift, ctrls, E0, E_targ, n_ts, evo_time,
                 fid_err_targ=fid_err_targ, min_grad=min_grad,
                 max_iter=max_iter, max_wall_time=max_wall_time,
-                amp_lbound=-10.0, amp_ubound=10.0,
+                amp_lbound=-100.0, amp_ubound=100.0,
 #                dyn_params={'oper_dtype':Qobj},
 #                prop_type='AUG_MAT',
 #                fid_type='UNIT',
@@ -239,8 +248,9 @@ result_m = cpo.optimize_pulse(drift, ctrls, E0, E_targ, n_ts, evo_time,
                 log_level=log_level, gen_stats=True)
 
 print("#"*20)
-print("\nOptimising complete. Stats follow:")
-result_m.stats.report()
+if REPORT_STATS:
+    print("Stats follow:")
+    result_s.stats.report()
 print("Final evolution\n{}\n".format(result_m.evo_full_final))
 print("####### Summary #######")
 print("Initial fidelity error {}".format(result_m.initial_fid_err))
