@@ -185,7 +185,8 @@ print("Starting pulse state-state optimisation")
 # and that the fidelity error, i.e. distance from the target, is give
 # by the trace of the difference between the target and evolved operators
 
-result_s = cpo.optimize_pulse(drift, ctrls, rho0, rho_targ, n_ts, evo_time,
+result_s = cpo.optimize_pulse(drift, ctrls, rho0_vec, rho_targ_vec,
+                n_ts, evo_time,
                 fid_err_targ=fid_err_targ, min_grad=min_grad,
                 max_iter=max_iter, max_wall_time=max_wall_time,
                 amp_lbound=-0.5, amp_ubound=0.5,
@@ -204,7 +205,7 @@ if REPORT_STATS:
     result_s.stats.report()
 
 print("Final evolution\n{}\n".format(result_s.evo_full_final))
-print("********* Summary *****************")
+print("********* Summary - state optim *******")
 print("Initial fidelity error {}".format(result_s.initial_fid_err))
 print("Final fidelity error {}".format(result_s.fid_err))
 print("unit gate fidelity {}".format(np.sqrt(1- result_s.fid_err)))
@@ -252,7 +253,7 @@ if REPORT_STATS:
     print("Stats follow:")
     result_s.stats.report()
 print("Final evolution\n{}\n".format(result_m.evo_full_final))
-print("####### Summary #######")
+print("######## Summary - map optim ########")
 print("Initial fidelity error {}".format(result_m.initial_fid_err))
 print("Final fidelity error {}".format(result_m.fid_err))
 print("unit gate fidelity {}".format(np.sqrt(1- result_m.fid_err)))
