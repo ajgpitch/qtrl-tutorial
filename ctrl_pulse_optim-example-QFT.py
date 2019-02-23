@@ -247,7 +247,8 @@ for j in range(n_ctrls):
     ax2.step(result.time,
              np.hstack((result.final_amps[:, j], result.final_amps[-1, j])),
              where='post')
-             
+fig1.tight_layout()
+
 if save_plots:
     plot_fname = "{}_piecewise.{}".format(fbase, plot_fext)
     fig1.savefig(plot_fname, bbox_inches='tight')
@@ -260,13 +261,14 @@ if show_linear:
     ax1.set_ylabel("Control amplitude")
     for j in range(n_ctrls):
         ax1.plot(result.time[:-1], result.initial_amps[:, j])
-                 
+
     ax2 = fig2.add_subplot(2, 1, 2)
     ax2.set_title("Optimised Control Sequences")
     ax2.set_xlabel("Time")
     ax2.set_ylabel("Control amplitude")
     for j in range(n_ctrls):
         ax2.plot(result.time[:-1], result.final_amps[:, j])
+    fig2.tight_layout()
     if save_plots:
         plot_fname = "{}_lin.{}".format(fbase, plot_fext)
         fig2.savefig(plot_fname, bbox_inches='tight')
