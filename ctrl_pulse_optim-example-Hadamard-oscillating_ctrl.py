@@ -26,12 +26,11 @@ number of timeslots and/or total time for the evolution.
 Different initial (starting) pulse types can be tried.
 The initial and final pulses are displayed in a plot
 """
-import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import datetime
 
-from qutip import Qobj, identity, sigmax, sigmay, sigmaz
+from qutip import identity, sigmax, sigmaz
 from qutip.qip import hadamard_transform
 import qutip.logging_utils as logging
 logger = logging.get_logger()
@@ -47,9 +46,7 @@ log_level = logging.INFO
 nSpins = 1
 
 H_0 = sigmaz()
-H_c = [sigmax()]
-# Number of ctrls
-n_ctrls = len(H_c)
+H_c = sigmax()
 
 U_0 = identity(2**nSpins)
 # Hadamard gate
@@ -57,9 +54,9 @@ U_0 = identity(2**nSpins)
 U_targ = hadamard_transform(nSpins)
 # ***** Define time evolution parameters *****
 # Number of time slots
-n_ts = 24
+n_ts = 100
 # Time allowed for the evolution
-evo_time = 6
+evo_time = 6.0
 
 # ***** Define the termination conditions *****
 # Fidelity error target
@@ -83,13 +80,18 @@ p_type = 'ZERO'
 H_d = H_0
 ctrls = []
 
-# In this example there is only a useful control in every third timeslot
-# Therefore we should see that amplitudes remain as initial in other timeslots
+# Full Hamiltonian
+# H = H0 + v(t)*H_c
+# v(t) = u(t)*cost(w*t)
+
+times = np.linspace(0, evo_time, n_ts, endpoint=False)
+# frequency
+w = 3.0
+
+# Make list of controls for each timeslot
+# In this case, one control, so list len=1 for each tslot.
 for k in range(n_ts):
-    if k % 3 == 0:
-        ctrls.append([sigmax()])
-    else:
-        ctrls.append([identity(2)])
+    ctrls.append([np.cos(w*times[k])*H_c])
 
 ctrls = np.array(ctrls, dtype=object)
 
@@ -124,24 +126,29 @@ print("Completed in {} HH:MM:SS.US".\
         format(datetime.timedelta(seconds=result.wall_time)))
 print("***********************************")
 
+u0 = result.initial_amps[:, 0]
+v0 = u0*np.cos(w*result.time[:-1])
+u_t = result.final_amps[:, 0]
+v_t = u_t*np.cos(w*result.time[:-1])
+
 # Plot the drift, initial and final amplitudes
-fig1 = plt.figure()
+fig = plt.figure()
 
-ax1 = fig1.add_subplot(2, 1, 1)
-ax1.set_title("Initial control amps")
-#ax1.set_xlabel("Time")
-ax1.set_ylabel("Control amplitude")
-for j in range(n_ctrls):
-    ax1.step(result.time,
-             np.hstack((result.initial_amps[:, j], result.initial_amps[-1, j])),
-             where='post')
+ax = fig.add_subplot(2, 1, 1)
+ax.set_title("Initial control amps")
+ax.set_ylabel("Control amplitude")
+ax.step(result.time, np.hstack([u0, u0[-1]]), where='post', label='ctrl')
+ax.step(result.time, np.hstack([v0, v0[-1]]), where='post',
+                               label='modulated ctrl')
+ax.legend()
 
-ax2 = fig1.add_subplot(2, 1, 2)
-ax2.set_title("Optimised Control Sequences")
-ax2.set_xlabel("Time")
-ax2.set_ylabel("Control amplitude")
-for j in range(n_ctrls):
-    ax2.step(result.time,
-             np.hstack((result.final_amps[:, j], result.final_amps[-1, j])),
-             where='post')
+ax = fig.add_subplot(2, 1, 2)
+ax.set_title("Optimised Control Sequences")
+ax.set_xlabel("Time")
+ax.set_ylabel("Amplitude")
+ax.step(result.time, np.hstack([u_t, u_t[-1]]), where='post', label='ctrl')
+ax.step(result.time, np.hstack([v_t, v_t[-1]]), where='post',
+                               label='modulated ctrl')
+ax.legend()
+fig.tight_layout()
 plt.show()
