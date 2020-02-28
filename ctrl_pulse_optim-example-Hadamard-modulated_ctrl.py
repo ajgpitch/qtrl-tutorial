@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Oct 27 12:58:53 2014
+Created on Fri 28 Feb 2020
 @author: Alexander Pitchford
 @email1: agp1@aber.ac.uk
 @email2: alex.pitchford@gmail.com
 @organization: Aberystwyth University
-@supervisor: Daniel Burgarth
 
 The code in this file was is intended for use in not-for-profit research,
 teaching, and learning. Any other applications may require additional
@@ -20,6 +19,7 @@ to optimal value of 1.
 The system in this example is a single qubit in a constant field in z
 with a variable control field in x
 The target evolution is the Hadamard gate irrespective of global phase
+*** In this case the control is modulated by a time-dependent function ***
 
 The user can experiment with the timeslicing, by means of changing the
 number of timeslots and/or total time for the evolution.
@@ -37,7 +37,7 @@ logger = logging.get_logger()
 #QuTiP control modules
 import qutip.control.pulseoptim as cpo
 
-example_name = 'Hadamard'
+example_name = 'modulated_ctrl'
 log_level = logging.INFO
 
 # ****************************************************************
@@ -88,10 +88,13 @@ times = np.linspace(0, evo_time, n_ts, endpoint=False)
 # frequency
 w = 3.0
 
+def modulate(t):
+    return np.cos(w*t)
+
 # Make list of controls for each timeslot
 # In this case, one control, so list len=1 for each tslot.
 for k in range(n_ts):
-    ctrls.append([np.cos(w*times[k])*H_c])
+    ctrls.append([modulate(times[k])*H_c])
 
 ctrls = np.array(ctrls, dtype=object)
 
@@ -127,9 +130,9 @@ print("Completed in {} HH:MM:SS.US".\
 print("***********************************")
 
 u0 = result.initial_amps[:, 0]
-v0 = u0*np.cos(w*result.time[:-1])
+v0 = u0*modulate(result.time[:-1])
 u_t = result.final_amps[:, 0]
-v_t = u_t*np.cos(w*result.time[:-1])
+v_t = u_t*modulate(result.time[:-1])
 
 # Plot the drift, initial and final amplitudes
 fig = plt.figure()
